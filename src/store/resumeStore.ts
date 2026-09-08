@@ -124,10 +124,15 @@ const isResume = (value: unknown): value is Resume => {
     && isStringArray(item.languages)
 }
 
-const isStore = (value: unknown): value is ResumeStore => {
+const isStoreShape = (value: unknown): value is { selectedResumeId: string; resumes: unknown[] } => {
   if (!value || typeof value !== 'object') return false
-  const item = value as Partial<ResumeStore>
-  return isString(item.selectedResumeId) && Array.isArray(item.resumes) && item.resumes.length > 0 && item.resumes.every(isResume)
+  const item = value as Partial<{ selectedResumeId: string; resumes: unknown[] }>
+  return isString(item.selectedResumeId) && Array.isArray(item.resumes)
+}
+
+const isStore = (value: unknown): value is ResumeStore => {
+  if (!isStoreShape(value) || value.resumes.length === 0) return false
+  return value.resumes.every(isResume)
 }
 
 const exampleStore = (): ResumeStore => {
@@ -141,6 +146,7 @@ export const loadResumeStore = (): ResumeStore => {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw) {
       const parsed: unknown = JSON.parse(raw)
+      if (isStoreShape(parsed) && parsed.resumes.length === 0) return createBlankStore()
       if (isStore(parsed)) {
         const selected = parsed.resumes.some((resume) => resume.id === parsed.selectedResumeId) ? parsed.selectedResumeId : parsed.resumes[0].id
         return { ...parsed, selectedResumeId: selected }
@@ -150,6 +156,11 @@ export const loadResumeStore = (): ResumeStore => {
     // The next successful state change overwrites malformed storage.
   }
   return exampleStore()
+}
+
+const createBlankStore = (): ResumeStore => {
+  const blank = createBlankResume()
+  return { selectedResumeId: blank.id, resumes: [blank] }
 }
 
 export const saveResumeStore = (store: ResumeStore): boolean => {
