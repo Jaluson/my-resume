@@ -361,6 +361,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .layout-section-visible { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .layout-section-visible input { accent-color: var(--blue); }
 .color-field input[type='color'] { width: 100%; height: 36px; padding: 3px; background: #fff; border: 1px solid #dfe3e8; border-radius: 6px; }
+.resume-custom-order .resume-main { gap: var(--resume-section-gap, 24px); }
 .resume-custom-order .resume-section { gap: max(7px, calc(var(--resume-section-gap, 24px) * .5)); }
 .resume-custom-order .resume-entry { gap: max(7px, calc(var(--resume-section-gap, 11px) * .35)); }
 .resume-custom-order .resume-entry > p, .resume-custom-order .resume-entry ul, .resume-custom-order .resume-section > p { line-height: var(--resume-line-height, 1.55); }
