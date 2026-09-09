@@ -263,3 +263,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .resume-executive .resume-main { padding: 0 23px 30px; }
   .resume-executive .resume-header { margin: 0 -23px; padding: 30px 23px; }
 }
+.resume-custom-order .resume-main { display: flex; flex-direction: column; zoom: var(--resume-font-scale, 1); }
+.resume-custom-order.resume-modern .resume-main { display: grid; }
+.resume-custom-order .resume-empty { order: 1; }
+.resume-density-compact .resume-section { margin-top: 14px; }
+.resume-density-compact .resume-entry { margin-top: 8px; }
+.resume-align-center .resume-main { text-align: center; }
+.resume-align-center .resume-contact { justify-items: center; text-align: center; }
+.resume-align-center .entry-heading { justify-content: center; }
+.resume-align-center .resume-tags { justify-content: center; }
+.layout-controls { padding: 16px 18px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 2px 8px rgba(17, 24, 39, .025); }
+.layout-controls-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.layout-controls-heading h2 { margin: 4px 0 0; font-size: 16px; letter-spacing: -.03em; }
+.layout-control-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 15px; }
+.layout-control-grid select { height: 36px; padding: 0 8px; color: var(--ink); background: #fff; border: 1px solid #dfe3e8; border-radius: 6px; }
+.layout-control-grid input[type="range"] { width: 100%; height: 36px; accent-color: var(--blue); }
+.layout-order { display: grid; gap: 5px; margin-top: 17px; padding-top: 13px; border-top: 1px solid var(--soft-line); }
+.layout-order .sub-label { margin-bottom: 2px; }
+.layout-order-row { display: flex; align-items: center; justify-content: space-between; min-height: 32px; padding: 0 7px 0 10px; color: #4b5563; background: #f8fafc; border: 1px solid var(--soft-line); border-radius: 5px; font-size: 12px; }
+.layout-order-row > span:last-child { display: flex; gap: 2px; }
+@media (max-width: 480px) { .layout-control-grid { grid-template-columns: 1fr; gap: 9px; } }

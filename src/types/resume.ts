@@ -37,6 +37,15 @@ export type ProjectItem = {
   bullets: string[]
 }
 
+export type ResumeSectionId = 'summary' | 'experience' | 'education' | 'skills' | 'projects' | 'languages'
+
+export type ResumeLayout = {
+  sectionOrder: ResumeSectionId[]
+  density: 'comfortable' | 'compact'
+  fontScale: number
+  alignment: 'left' | 'center'
+}
+
 export type Resume = {
   id: string
   title: string
@@ -49,6 +58,7 @@ export type Resume = {
   skills: string[]
   projects: ProjectItem[]
   languages: string[]
+  layout: ResumeLayout
 }
 
 export type ResumeStore = {

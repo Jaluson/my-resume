@@ -1,4 +1,4 @@
-import type { EducationItem, ExperienceItem, ProjectItem, Profile, Resume, ResumeStore } from '../types/resume'
+import type { EducationItem, ExperienceItem, Profile, ProjectItem, Resume, ResumeLayout, ResumeSectionId, ResumeStore } from '../types/resume'
 
 export const STORAGE_KEY = 'resume-editor:v1'
 export const RECOVERY_KEY = 'resume-editor:recovery'
@@ -20,16 +20,18 @@ const experience: ExperienceItem[] = [
 const education: EducationItem[] = [{ id: makeId(), school: '中国美术学院', degree: '本科', field: '视觉传达设计', startDate: '2014', endDate: '2018' }]
 const projects: ProjectItem[] = [{ id: makeId(), name: '协作工作台', description: '面向远程团队的任务协作与知识管理产品。', url: 'xiaolan.design/workspace', bullets: ['通过信息架构重组，让新用户上手时间降低 40%。'] }]
 
+const defaultLayout = (): ResumeLayout => ({ sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages'], density: 'comfortable', fontScale: 1, alignment: 'left' })
+
 export const createBlankResume = (title = '未命名简历'): Resume => ({
   id: makeId(), title, templateId: 'classic', updatedAt: now(),
-  profile: { fullName: '', jobTitle: '', email: '', phone: '', location: '', website: '' }, summary: '', experience: [], education: [], skills: [], projects: [], languages: [],
+  profile: { fullName: '', jobTitle: '', email: '', phone: '', location: '', website: '' }, summary: '', experience: [], education: [], skills: [], projects: [], languages: [], layout: defaultLayout(),
 })
 
 const createExampleResume = (): Resume => ({
   id: makeId(), title: '我的第一份简历', templateId: 'classic', updatedAt: now(), profile: { ...profile },
   summary: '拥有 6 年数字产品设计经验，擅长将复杂业务转化为清晰、可执行的用户体验。注重以研究驱动决策，并通过设计系统帮助团队高质量交付。',
   experience: experience.map((item) => ({ ...item, id: makeId(), bullets: [...item.bullets] })), education: education.map((item) => ({ ...item, id: makeId() })),
-  skills: ['用户研究', '交互设计', '设计系统', 'Figma', '原型设计', '团队协作'], projects: projects.map((item) => ({ ...item, id: makeId(), bullets: [...item.bullets] })), languages: ['中文（母语）', '英语（熟练）'],
+  skills: ['用户研究', '交互设计', '设计系统', 'Figma', '原型设计', '团队协作'], projects: projects.map((item) => ({ ...item, id: makeId(), bullets: [...item.bullets] })), languages: ['中文（母语）', '英语（熟练）'], layout: defaultLayout(),
 })
 
 const isString = (value: unknown): value is string => typeof value === 'string'
@@ -54,10 +56,25 @@ const isProject = (value: unknown): value is ProjectItem => {
   const item = value as Partial<ProjectItem>
   return [item.id, item.name, item.description, item.url].every(isString) && isStringArray(item.bullets)
 }
+const sectionIds: ResumeSectionId[] = ['summary', 'experience', 'education', 'skills', 'projects', 'languages']
+const isLayout = (value: unknown): value is ResumeLayout => {
+  if (!value || typeof value !== 'object') return false
+  const layout = value as Partial<ResumeLayout>
+  return Array.isArray(layout.sectionOrder) && layout.sectionOrder.every((section) => sectionIds.includes(section)) && (layout.density === 'comfortable' || layout.density === 'compact') && typeof layout.fontScale === 'number' && layout.fontScale >= 0.85 && layout.fontScale <= 1.15 && (layout.alignment === 'left' || layout.alignment === 'center')
+}
+const normalizeLayout = (layout: ResumeLayout | undefined): ResumeLayout => {
+  const order = layout?.sectionOrder.filter((section, index, items) => sectionIds.includes(section) && items.indexOf(section) === index)
+  return {
+    sectionOrder: [...(order ?? []), ...sectionIds.filter((section) => !order?.includes(section))],
+    density: layout?.density === 'compact' ? 'compact' : 'comfortable',
+    fontScale: layout && layout.fontScale >= 0.85 && layout.fontScale <= 1.15 ? layout.fontScale : 1,
+    alignment: layout?.alignment === 'center' ? 'center' : 'left',
+  }
+}
 const isResume = (value: unknown): value is Resume => {
   if (!value || typeof value !== 'object') return false
   const item = value as Partial<Resume>
-  return isString(item.id) && isString(item.title) && (item.templateId === 'classic' || item.templateId === 'modern' || item.templateId === 'minimal' || item.templateId === 'editorial' || item.templateId === 'executive' || item.templateId === 'compact') && isString(item.updatedAt) && isProfile(item.profile) && isString(item.summary) && Array.isArray(item.experience) && item.experience.every(isExperience) && Array.isArray(item.education) && item.education.every(isEducation) && isStringArray(item.skills) && Array.isArray(item.projects) && item.projects.every(isProject) && isStringArray(item.languages)
+  return isString(item.id) && isString(item.title) && (item.templateId === 'classic' || item.templateId === 'modern' || item.templateId === 'minimal' || item.templateId === 'editorial' || item.templateId === 'executive' || item.templateId === 'compact') && isString(item.updatedAt) && isProfile(item.profile) && isString(item.summary) && Array.isArray(item.experience) && item.experience.every(isExperience) && Array.isArray(item.education) && item.education.every(isEducation) && isStringArray(item.skills) && Array.isArray(item.projects) && item.projects.every(isProject) && isStringArray(item.languages) && (item.layout === undefined || isLayout(item.layout))
 }
 const isStoreShape = (value: unknown): value is { selectedResumeId: string; resumes: unknown[] } => {
   if (!value || typeof value !== 'object') return false
@@ -77,7 +94,7 @@ const normalizeResume = (resume: Resume, usedResumeIds: Set<string>): Resume => 
     })
   }
   return {
-    ...resume, id: resumeId, profile: { ...resume.profile }, summary: resume.summary, updatedAt: resume.updatedAt,
+    ...resume, id: resumeId, profile: { ...resume.profile }, summary: resume.summary, updatedAt: resume.updatedAt, layout: normalizeLayout(resume.layout),
     experience: normalizeItems(resume.experience, (item) => ({ ...item, endDate: item.current ? '' : item.endDate, bullets: [...item.bullets] })),
     education: normalizeItems(resume.education, (item) => ({ ...item })),
     projects: normalizeItems(resume.projects, (item) => ({ ...item, bullets: [...item.bullets] })),
