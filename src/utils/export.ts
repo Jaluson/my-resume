@@ -1,6 +1,4 @@
 import type { Paragraph as DocxParagraph } from 'docx'
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
 import type { Resume } from '../types/resume'
 import { templateById } from '../data/templates'
 import { formatResumePeriod, getResumeContent, toSafeExternalUrl } from './resume'
@@ -25,6 +23,9 @@ export async function exportResumeToPdf(resume: Resume, element: HTMLElement): P
   if (typeof window === 'undefined') throw new Error('PDF 导出只能在浏览器中执行')
   const bounds = element.getBoundingClientRect()
   if (bounds.width <= 0 || bounds.height <= 0) throw new Error('找不到有效的 PDF 预览尺寸')
+  // Load export-only dependencies on demand; rasterizing the browser output preserves CJK glyphs.
+  const { default: html2canvas } = await import('html2canvas')
+  const { jsPDF } = await import('jspdf')
   const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, windowWidth: 794 })
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const pageWidth = 210
