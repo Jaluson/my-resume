@@ -215,12 +215,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .resume-paper { width: 210mm; max-width: none; min-height: 297mm; box-shadow: none; }
   .export-capture, .toast, .notice { display: none !important; }
 }
-.workspace-main { min-width: 0; display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.workspace-main { min-width: 0; display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 16px; align-items: start; }
 .template-sidebar { min-width: 0; padding-top: 8px; position: sticky; top: 92px; }
 .template-sidebar .template-panel { margin-top: 0; }
 @media (max-width: 1180px) {
   .workspace { grid-template-columns: 210px minmax(0, 1fr); }
-  .workspace-main { grid-template-columns: 190px minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+  .workspace-main { grid-template-columns: 190px minmax(0, 1fr); gap: 14px; }
 }
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 190px minmax(0, 1fr); }
@@ -365,3 +365,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .resume-custom-order .resume-section { gap: max(7px, calc(var(--resume-section-gap, 24px) * .5)); }
 .resume-custom-order .resume-entry { gap: max(7px, calc(var(--resume-section-gap, 11px) * .35)); }
 .resume-custom-order .resume-entry > p, .resume-custom-order .resume-entry ul, .resume-custom-order .resume-section > p { line-height: var(--resume-line-height, 1.55); }
+/* Editor and live preview share one responsive workbench. */
+.workspace-main { grid-template-columns: 200px minmax(0, 1fr); }
+.resume-workbench { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.resume-workbench .editor-column, .resume-workbench .preview-column { grid-column: auto; grid-row: auto; }
+@media (max-width: 1180px) {
+  .workspace-main { grid-template-columns: 190px minmax(0, 1fr); }
+  .resume-workbench { gap: 14px; }
+}
+@media (max-width: 900px) {
+  .workspace-main { grid-template-columns: minmax(0, 1fr); }
+  .workspace-main .manager-panel { grid-row: auto; }
+  .resume-workbench { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  .workspace-main { display: block; }
+  .resume-workbench { display: block; }
+}
