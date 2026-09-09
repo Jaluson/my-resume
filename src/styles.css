@@ -380,3 +380,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workspace-main { display: block; }
   .resume-workbench { display: block; }
 }
+/* The workbench is one surface; editor and preview are internal synchronized panes. */
+.resume-workbench { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 0; overflow: hidden; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 2px 8px rgba(17, 24, 39, .025); }
+.workbench-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; background: #fff; border-bottom: 1px solid var(--line); }
+.workbench-heading h1 { margin: 4px 0 0; font-size: 20px; letter-spacing: -.03em; }
+.workbench-body { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.workbench-body > .editor-column, .workbench-body > .preview-column { min-width: 0; display: block; padding: 20px; }
+.workbench-body > .editor-column { border-right: 1px solid var(--line); }
+.workbench-body > .editor-column > .column-heading, .workbench-body > .preview-column > .preview-heading { display: none; }
+.workbench-body > .preview-column { position: static; background: #fafbfc; }
+@media (max-width: 900px) {
+  .workbench-body { grid-template-columns: minmax(0, 1fr); }
+  .workbench-body > .editor-column { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 768px) {
+  .workbench-heading { align-items: flex-start; padding: 14px; }
+  .workbench-heading .hint-text { max-width: 150px; text-align: right; }
+  .workbench-body > .editor-column, .workbench-body > .preview-column { padding: 12px; }
+  .workbench-body > .preview-column { background: #fafbfc; }
+}
