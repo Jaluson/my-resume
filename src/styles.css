@@ -232,3 +232,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workspace-main { display: block; }
   .template-sidebar { padding-top: 5px; margin-bottom: 14px; }
 }
+.preview-editable { min-width: .35em; display: inline-block; cursor: text; border-radius: 3px; transition: background-color .15s ease, box-shadow .15s ease; }
+.preview-editable:hover { background: rgba(37, 99, 235, .07); }
+.preview-editable:focus { outline: 0; background: rgba(37, 99, 235, .08); box-shadow: 0 0 0 2px rgba(37, 99, 235, .18); }
+.preview-editable.is-empty::before { content: attr(data-placeholder); color: #9ca3af; font-weight: 400; }
