@@ -6,6 +6,7 @@ import ResumeWorkspace from './components/ResumeWorkspace'
 import ExportMenu from './components/ExportMenu'
 import { clearRecovery, createBlankResume, loadResumeStore, makeId, saveResumeStore } from './store/resumeStore'
 import { exportResumeToDocx, exportResumeToPdf } from './utils/export'
+import LoadingIndicator from './components/LoadingIndicator'
 import type { Resume, ResumeStore } from './types/resume'
 import type { ResumeStoreLoad } from './store/resumeStore'
 
@@ -24,6 +25,7 @@ export default function App() {
   const [dirty, setDirty] = useState(loaded.status === 'migrated')
   const previewRef = useRef<HTMLDivElement>(null)
   const exportRef = useRef<HTMLDivElement>(null)
+  const mobileManagerTriggerRef = useRef<HTMLButtonElement>(null)
   const storeRef = useRef(store)
   storeRef.current = store
   const currentResume = useMemo(() => store.resumes.find((resume) => resume.id === store.selectedResumeId) ?? store.resumes[0], [store])
@@ -64,6 +66,7 @@ export default function App() {
   const runExport = async (format: 'pdf' | 'docx') => {
     if (!currentResume) return
     const trigger = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null
+    const startedAt = performance.now()
     setExporting(format); setError('')
     try {
       if (format === 'pdf') {
@@ -73,15 +76,18 @@ export default function App() {
         await exportResumeToPdf(currentResume, element)
       } else await exportResumeToDocx(currentResume)
     } catch (exportError) { setError(exportError instanceof Error ? exportError.message : '导出失败，请稍后重试') } finally {
+      const remaining = Math.max(0, 650 - (performance.now() - startedAt))
+      await new Promise<void>((resolve) => window.setTimeout(resolve, remaining))
       setExporting(null)
       window.setTimeout(() => trigger?.focus(), 0)
     }
   }
 
   if (!currentResume) return null
-  return <div className="app-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark"><Sparkles size={16} /></span><span>简历工坊</span></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite"><Save size={14} />{saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : '已保存'}</span><button className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
-    <main className="workspace"><div className="workspace-main"><ResumeManager resumes={store.resumes} selectedId={currentResume.id} onSelect={selectResume} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} /><ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} /></div></main>
+  return <div className={`app-shell${exporting ? ' is-exporting' : ''}`}>
+    <header className="topbar"><div className="brand"><span className="brand-mark"><Sparkles size={16} /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite">{saveState === 'saving' ? <LoadingIndicator label="保存中" /> : <><Save size={14} />{saveState === 'error' ? '保存失败' : '已保存'}</>}</span><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
+    {exporting && <LoadingIndicator fullScreen label={exporting === 'pdf' ? '正在生成 PDF' : '正在生成 Word'} detail="正在整理版式与内容，请稍候" />}
+    <main className="workspace"><div className="workspace-main"><ResumeManager resumes={store.resumes} selectedId={currentResume.id} onSelect={selectResume} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} mobileTriggerRef={mobileManagerTriggerRef} /><ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} /></div></main>
     <div className="export-capture" aria-hidden="true"><ResumePreview resume={currentResume} interactive={false} ref={exportRef} /></div>
     {loadWarning && <div className="notice" role="alert"><span>{loadWarning}</span><button className="icon-button" type="button" onClick={() => { clearRecovery(); setLoadWarning('') }} aria-label="关闭恢复提示"><X size={17} /></button></div>}
     {saveError && <div className="toast save-error-toast" role="alert"><span>保存失败，建议立即导出。</span><button className="secondary-button" type="button" onClick={persist}>重试保存</button><button className="primary-button" type="button" onClick={() => runExport('pdf')}>导出 PDF</button><button className="icon-button" type="button" onClick={() => setSaveError(false)} aria-label="关闭保存提示"><X size={17} /></button></div>}

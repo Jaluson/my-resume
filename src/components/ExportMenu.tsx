@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, Download, FileText, X } from 'lucide-react'
+import LoadingIndicator from './LoadingIndicator'
 
 export type ExportFormat = 'pdf' | 'docx'
 
@@ -13,18 +14,45 @@ const options: Array<{ format: ExportFormat; label: string; description: string 
   { format: 'docx', label: '导出为 Word', description: '便于继续编辑内容' },
 ]
 
+const mobileMediaQuery = '(max-width: 768px)'
+
+
 export default function ExportMenu({ exporting, onExport }: ExportMenuProps) {
   const [open, setOpen] = useState(false)
-  const isMobileViewport = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+  const [isMobileViewport, setIsMobileViewport] = useState(typeof window !== 'undefined' && window.matchMedia(mobileMediaQuery).matches)
   const rootRef = useRef<HTMLDivElement>(null)
   const modalRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dropdownFirstRef = useRef<HTMLButtonElement>(null)
   const modalFirstRef = useRef<HTMLButtonElement>(null)
+  const wasOpenRef = useRef(false)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(mobileMediaQuery)
+    const syncViewport = () => setIsMobileViewport(mediaQuery.matches)
+    syncViewport()
+    window.addEventListener('resize', syncViewport)
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', syncViewport)
+      return () => {
+        window.removeEventListener('resize', syncViewport)
+        mediaQuery.removeEventListener('change', syncViewport)
+      }
+    }
+    mediaQuery.addListener(syncViewport)
+    return () => {
+      window.removeEventListener('resize', syncViewport)
+      mediaQuery.removeListener(syncViewport)
+    }
+  }, [])
+  useEffect(() => {
+    if (!open && wasOpenRef.current) triggerRef.current?.focus()
+    wasOpenRef.current = open
+  }, [open])
+
+
 
   const closeMenu = () => {
     setOpen(false)
-    window.requestAnimationFrame(() => triggerRef.current?.focus())
   }
 
   useEffect(() => {
@@ -51,12 +79,13 @@ export default function ExportMenu({ exporting, onExport }: ExportMenuProps) {
     }
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
-    window.requestAnimationFrame(() => (isMobile ? modalFirstRef : dropdownFirstRef).current?.focus())
+    const firstControlRef = isMobile ? modalFirstRef : dropdownFirstRef
+    firstControlRef.current?.focus()
     return () => {
       document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open])
+  }, [open, isMobileViewport])
 
   const choose = async (format: ExportFormat) => {
     setOpen(false)
@@ -72,11 +101,9 @@ export default function ExportMenu({ exporting, onExport }: ExportMenuProps) {
     </button>
   }
 
-  return <div ref={rootRef} className={`export-menu ${open ? 'is-open' : ''}`}>
-    <button ref={triggerRef} className="export-menu-trigger primary-button" type="button" onClick={() => setOpen(!open)} disabled={Boolean(exporting)} aria-haspopup={isMobileViewport ? 'dialog' : 'menu'} aria-expanded={open} aria-controls={isMobileViewport ? 'export-format-dialog' : 'export-menu-dropdown'} aria-busy={Boolean(exporting)}>
-      <Download size={16} aria-hidden="true" />
-      <span>{exporting ? '生成…' : '导出'}</span>
-      <ChevronDown size={14} aria-hidden="true" />
+  return <div ref={rootRef} className={`export-menu${exporting ? ' is-exporting' : ''}${open ? ' is-open' : ''}`}>
+    <button ref={triggerRef} className={`export-menu-trigger primary-button${exporting ? ' is-exporting' : ''}`} type="button" onClick={() => setOpen(!open)} disabled={Boolean(exporting)} aria-haspopup={isMobileViewport ? 'dialog' : 'menu'} aria-expanded={open} aria-controls={isMobileViewport ? 'export-format-dialog' : 'export-menu-dropdown'} aria-busy={Boolean(exporting)}>
+      {exporting ? <LoadingIndicator label="生成中" /> : <><Download size={16} aria-hidden="true" /><span>导出</span><ChevronDown size={14} aria-hidden="true" /></>}
     </button>
     <div id="export-menu-dropdown" className="export-menu-dropdown" role="menu" aria-label="选择导出格式">
       {options.map((option) => renderOption(option, dropdownFirstRef, `export-option-${option.format}`, 'menuitem'))}

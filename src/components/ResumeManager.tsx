@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Copy, FilePlus2, MoreHorizontal, Pencil, Trash2, X } from 'lucide-react'
 import { templateById } from '../data/templates'
+import type { RefObject } from 'react'
 import type { Resume } from '../types/resume'
 
-type ResumeManagerProps = { resumes: Resume[]; selectedId: string; onSelect: (id: string) => void; onCreate: () => void; onDuplicate: (id: string) => void; onRename: (id: string, title: string) => void; onDelete: (id: string) => void; mobileOpen: boolean; onCloseMobile: () => void }
+type ResumeManagerProps = { resumes: Resume[]; selectedId: string; onSelect: (id: string) => void; onCreate: () => void; onDuplicate: (id: string) => void; onRename: (id: string, title: string) => void; onDelete: (id: string) => void; mobileOpen: boolean; onCloseMobile: () => void; mobileTriggerRef: RefObject<HTMLButtonElement> }
 const updatedAtFormatter = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' })
 
 const formatUpdatedAt = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? '刚刚更新' : updatedAtFormatter.format(date) }
 
-export default function ResumeManager({ resumes, selectedId, onSelect, onCreate, onDuplicate, onRename, onDelete, mobileOpen, onCloseMobile }: ResumeManagerProps) {
+export default function ResumeManager({ resumes, selectedId, onSelect, onCreate, onDuplicate, onRename, onDelete, mobileOpen, onCloseMobile, mobileTriggerRef }: ResumeManagerProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftTitle, setDraftTitle] = useState('')
   const [menuId, setMenuId] = useState<string | null>(null)
@@ -18,7 +19,10 @@ export default function ResumeManager({ resumes, selectedId, onSelect, onCreate,
   const deleteTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const dialogRef = useRef<HTMLDivElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
-
+  const mobilePanelRef = useRef<HTMLElement>(null)
+  const mobileCloseRef = useRef<HTMLButtonElement>(null)
+  const mobilePreviousFocusRef = useRef<HTMLElement | null>(null)
+  const focusableSelector = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
   useEffect(() => { if (editingId && !resumes.some((resume) => resume.id === editingId)) setEditingId(null) }, [editingId, resumes])
   useEffect(() => {
     if (!menuId) return
@@ -30,11 +34,44 @@ export default function ResumeManager({ resumes, selectedId, onSelect, onCreate,
   }, [menuId])
   useEffect(() => { if (confirmId) cancelRef.current?.focus() }, [confirmId])
   useEffect(() => {
-    if (!mobileOpen) return
-    const closeOnKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCloseMobile() }
+    if (!mobileOpen) {
+      const previous = mobilePreviousFocusRef.current
+      mobilePreviousFocusRef.current = null
+      if (previous?.isConnected) previous.focus()
+      return
+    }
+    if (!mobilePreviousFocusRef.current) {
+      const active = document.activeElement
+      mobilePreviousFocusRef.current = active instanceof HTMLElement && active !== document.body ? active : mobileTriggerRef.current
+    }
+    mobileCloseRef.current?.focus()
+  }, [mobileOpen, mobileTriggerRef])
+  useEffect(() => {
+    if (!mobileOpen || confirmId) return
+    const closeOnKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (menuId) return
+        event.preventDefault()
+        onCloseMobile()
+        return
+      }
+      if (event.key !== 'Tab' || !mobilePanelRef.current) return
+      const controls = Array.from(mobilePanelRef.current.querySelectorAll<HTMLElement>(focusableSelector))
+      if (!controls.length) return
+      const index = controls.indexOf(document.activeElement as HTMLElement)
+      if (index === -1) {
+        event.preventDefault()
+        controls[event.shiftKey ? controls.length - 1 : 0].focus()
+        return
+      }
+      const nextIndex = index + (event.shiftKey ? -1 : 1)
+      if (nextIndex >= 0 && nextIndex < controls.length) return
+      event.preventDefault()
+      controls[nextIndex < 0 ? controls.length - 1 : 0].focus()
+    }
     document.addEventListener('keydown', closeOnKey)
     return () => document.removeEventListener('keydown', closeOnKey)
-  }, [mobileOpen, onCloseMobile])
+  }, [mobileOpen, confirmId, menuId, onCloseMobile])
   useEffect(() => {
     if (!mobileOpen) return
     const previousOverflow = document.body.style.overflow
@@ -62,8 +99,8 @@ export default function ResumeManager({ resumes, selectedId, onSelect, onCreate,
   const closeAfter = (action: () => void) => { action(); onCloseMobile() }
   const closeDialog = () => { const trigger = deleteTriggerRefs.current[confirmId ?? '']; setConfirmId(null); window.setTimeout(() => trigger?.focus(), 0) }
 
-  return <>{mobileOpen && <button className="mobile-manager-backdrop" type="button" onClick={onCloseMobile} aria-label="关闭简历管理" />}<aside id="resume-manager-panel" className={`manager-panel ${mobileOpen ? 'mobile-manager-open' : ''}`} aria-label="简历管理">
-    <div className="panel-heading"><div><p className="eyebrow">工作区</p><h2>我的简历</h2></div><div className="panel-heading-actions"><span className="count-badge">{resumes.length}</span><button className="icon-button mobile-manager-close" type="button" onClick={onCloseMobile} aria-label="关闭简历管理"><X size={18} /></button></div></div>
+  return <>{mobileOpen && <button className="mobile-manager-backdrop" type="button" onClick={onCloseMobile} aria-label="关闭简历管理" />}<aside ref={mobilePanelRef} id="resume-manager-panel" className={`manager-panel ${mobileOpen ? 'mobile-manager-open' : ''}`} aria-label="简历管理">
+    <div className="panel-heading"><div><p className="eyebrow">工作区</p><h2>我的简历</h2></div><div className="panel-heading-actions"><span className="count-badge">{resumes.length}</span><button ref={mobileCloseRef} className="icon-button mobile-manager-close" type="button" onClick={onCloseMobile} aria-label="关闭简历管理"><X size={18} /></button></div></div>
     <button className="new-resume-button" type="button" onClick={() => closeAfter(onCreate)}><FilePlus2 size={17} />新建简历</button>
     <div className="resume-list">{resumes.map((resume) => <div className={`resume-list-item ${resume.id === selectedId ? 'is-active' : ''}`} key={resume.id} data-resume-menu={menuId === resume.id ? resume.id : undefined}>
       {editingId === resume.id ? <input className="rename-input" value={draftTitle} autoFocus onChange={(event) => setDraftTitle(event.target.value)} onBlur={commitRename} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); commitRename() } if (event.key === 'Escape') { if (renameSessionRef.current) renameSessionRef.current.cancelled = true; setEditingId(null) } }} aria-label="简历名称" /> : <button className="resume-list-main" type="button" onClick={() => closeAfter(() => onSelect(resume.id))}><span className="resume-list-title">{resume.title || '未命名简历'}</span><span className="resume-list-meta">{templateById(resume.templateId).name} · {formatUpdatedAt(resume.updatedAt)}</span></button>}
