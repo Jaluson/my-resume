@@ -284,21 +284,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .layout-order-row > span:last-child { display: flex; gap: 2px; }
 @media (max-width: 480px) { .layout-control-grid { grid-template-columns: 1fr; gap: 9px; } }
 .workspace { grid-template-columns: minmax(0, 1fr) 260px; }
-.workspace-main { grid-column: 1; grid-row: 1; }
 .template-sidebar { grid-column: 2; grid-row: 1; }
 @media (max-width: 1180px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 210px; }
 }
 @media (max-width: 900px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 190px; }
-  .workspace-main { grid-column: 1; grid-row: 1; }
   .template-sidebar { grid-column: 2; grid-row: 1; }
 }
 @media (max-width: 768px) {
   .workspace { display: flex; flex-direction: column; }
   .workspace-main { width: 100%; order: 1; }
   .template-sidebar { width: 100%; order: 2; }
-  .workspace-main, .template-sidebar { grid-column: auto; grid-row: auto; }
+.template-sidebar { grid-column: auto; grid-row: auto; }
 }
 .editor-column > .column-heading { position: sticky; top: 68px; z-index: 8; margin-top: -8px; padding: 16px 0 14px; background: var(--bg); border-bottom: 1px solid rgba(229, 231, 235, .85); }
 @media (max-width: 768px) {
