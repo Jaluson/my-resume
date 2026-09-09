@@ -334,3 +334,36 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workspace { padding: 0; }
   .template-sidebar { margin-bottom: 0; padding: 0; }
 }
+/* Resume typography spacing also uses container gaps; paper/control insets stay as padding. */
+.resume-custom-order .resume-main { gap: 24px; }
+.resume-custom-order .resume-header { padding-bottom: 0; }
+.resume-custom-order .resume-header > div { display: grid; gap: 10px; }
+.resume-custom-order .resume-role { margin: 0; }
+.resume-custom-order .resume-section { margin: 0; gap: 11px; }
+.resume-custom-order .resume-section h2 { margin: 0; }
+.resume-custom-order .resume-entry { display: grid; gap: 7px; margin: 0; }
+.resume-custom-order .entry-heading > div { display: grid; gap: 3px; }
+.resume-custom-order .entry-heading p, .resume-custom-order .resume-entry > p, .resume-custom-order .resume-entry ul, .resume-custom-order .resume-entry li { margin: 0; }
+.resume-custom-order.resume-modern .resume-section, .resume-custom-order.resume-modern .resume-empty { margin-right: 0; }
+.resume-custom-order.resume-modern .resume-section:first-of-type { margin-top: 0; }
+.resume-custom-order.resume-minimal .resume-section, .resume-custom-order.resume-compact .resume-section { margin-top: 0; }
+.resume-custom-order.resume-compact .resume-entry { margin-top: 0; }
+.layout-controls { display: grid; gap: 16px; }
+.layout-control-grid, .layout-order { margin-top: 0; }
+.layout-order .sub-label { margin: 0; }
+.save-status { margin-right: 0; }
+.workspace { padding: 18px 18px 36px; }
+.editor-column > .column-heading { margin-top: 0; }
+@media (max-width: 768px) {
+  .workspace { padding: 14px 12px 36px; }
+  .template-sidebar { margin-bottom: 0; padding: 0; }
+  .editor-column > .column-heading { margin-top: 0; }
+}
+.resume-custom-order.resume-executive .resume-main { padding: 0 0 62px; }
+.resume-custom-order.resume-executive .resume-header { margin: 0; padding-bottom: 0; }
+.resume-custom-order.resume-executive .resume-section, .resume-custom-order.resume-executive .resume-empty { padding-left: 62px; padding-right: 62px; }
+.resume-custom-order.resume-executive .resume-section:first-of-type { margin-top: 0; }
+@media (max-width: 768px) {
+  .resume-custom-order.resume-executive .resume-main { padding-bottom: 30px; }
+  .resume-custom-order.resume-executive .resume-section, .resume-custom-order.resume-executive .resume-empty { padding-left: 23px; padding-right: 23px; }
+}
