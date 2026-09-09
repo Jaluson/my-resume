@@ -56,7 +56,7 @@ export default function ResumeManager({ resumes, selectedId, onSelect, onCreate,
   const closeAfter = (action: () => void) => { action(); onCloseMobile() }
   const closeDialog = () => { const trigger = deleteTriggerRefs.current[confirmId ?? '']; setConfirmId(null); window.setTimeout(() => trigger?.focus(), 0) }
 
-  return <aside id="resume-manager-panel" className={`manager-panel ${mobileOpen ? 'mobile-manager-open' : ''}`} aria-label="简历管理">
+  return <>{mobileOpen && <button className="mobile-manager-backdrop" type="button" onClick={onCloseMobile} aria-label="关闭简历管理" />}<aside id="resume-manager-panel" className={`manager-panel ${mobileOpen ? 'mobile-manager-open' : ''}`} aria-label="简历管理">
     <div className="panel-heading"><div><p className="eyebrow">工作区</p><h2>我的简历</h2></div><div className="panel-heading-actions"><span className="count-badge">{resumes.length}</span><button className="icon-button mobile-manager-close" type="button" onClick={onCloseMobile} aria-label="关闭简历管理"><X size={18} /></button></div></div>
     <button className="new-resume-button" type="button" onClick={() => closeAfter(onCreate)}><FilePlus2 size={17} />新建简历</button>
     <div className="resume-list">{resumes.map((resume) => <div className={`resume-list-item ${resume.id === selectedId ? 'is-active' : ''}`} key={resume.id} data-resume-menu={menuId === resume.id ? resume.id : undefined}>
@@ -66,5 +66,5 @@ export default function ResumeManager({ resumes, selectedId, onSelect, onCreate,
     </div>)}</div>
     <p className="storage-note">内容自动保存至本地浏览器</p>
     {confirmId && <div className="confirm-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDialog() }}><div className="confirm-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-title"><h3 id="delete-title">删除这份简历？</h3><p>删除后内容无法恢复，请确认是否继续。</p><div className="dialog-actions"><button className="secondary-button" type="button" ref={cancelRef} onClick={closeDialog}>取消</button><button className="danger-button" type="button" onClick={() => { onDelete(confirmId); onCloseMobile(); closeDialog() }}>确认删除</button></div></div></div>}
-  </aside>
+  </aside></>
 }
