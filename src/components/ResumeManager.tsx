@@ -36,6 +36,12 @@ export default function ResumeManager({ resumes, selectedId, onSelect, onCreate,
     return () => document.removeEventListener('keydown', closeOnKey)
   }, [mobileOpen, onCloseMobile])
   useEffect(() => {
+    if (!mobileOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previousOverflow }
+  }, [mobileOpen])
+  useEffect(() => {
     if (!confirmId) return
     const trap = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { closeDialog(); return }
