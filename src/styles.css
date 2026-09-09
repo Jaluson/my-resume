@@ -283,3 +283,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .layout-order-row { display: flex; align-items: center; justify-content: space-between; min-height: 32px; padding: 0 7px 0 10px; color: #4b5563; background: #f8fafc; border: 1px solid var(--soft-line); border-radius: 5px; font-size: 12px; }
 .layout-order-row > span:last-child { display: flex; gap: 2px; }
 @media (max-width: 480px) { .layout-control-grid { grid-template-columns: 1fr; gap: 9px; } }
+.workspace { grid-template-columns: minmax(0, 1fr) 260px; }
+.workspace-main { grid-column: 1; grid-row: 1; }
+.template-sidebar { grid-column: 2; grid-row: 1; }
+@media (max-width: 1180px) {
+  .workspace { grid-template-columns: minmax(0, 1fr) 210px; }
+}
+@media (max-width: 900px) {
+  .workspace { grid-template-columns: minmax(0, 1fr) 190px; }
+  .workspace-main { grid-column: 1; grid-row: 1; }
+  .template-sidebar { grid-column: 2; grid-row: 1; }
+}
+@media (max-width: 768px) {
+  .workspace { display: flex; flex-direction: column; }
+  .workspace-main { width: 100%; order: 1; }
+  .template-sidebar { width: 100%; order: 2; }
+  .workspace-main, .template-sidebar { grid-column: auto; grid-row: auto; }
+}
