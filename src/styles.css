@@ -21,6 +21,145 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .primary-button:hover { background: #1d4ed8; }
 .secondary-button { color: #374151; background: #fff; border: 1px solid var(--line); }
 .secondary-button:hover { border-color: #c6cbd4; background: #f9fafb; }
+.export-menu {
+  position: relative;
+}
+
+.export-menu-trigger {
+  min-width: 78px;
+  white-space: nowrap;
+}
+
+.export-menu-trigger > svg:last-child {
+  transition: transform .2s var(--motion-spring);
+}
+
+.export-menu.is-open .export-menu-trigger > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.export-menu-dropdown {
+  min-width: 240px;
+  display: none;
+  gap: 4px;
+  padding: 6px;
+  position: absolute;
+  top: calc(100% + 16px);
+  right: 0;
+  z-index: 25;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 16px 36px rgba(17, 24, 39, .14);
+}
+
+.export-menu.is-open .export-menu-dropdown {
+  display: grid;
+  animation: surface-in .22s var(--motion-standard) both;
+}
+
+.export-option {
+  width: 100%;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.export-option:hover {
+  background: var(--blue-soft);
+}
+
+.export-option:active {
+  transform: translateY(1px);
+}
+
+.export-option > svg {
+  flex: 0 0 auto;
+  color: var(--blue);
+}
+
+.export-option-docx > svg {
+  color: #475569;
+}
+
+.export-option > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.export-option strong {
+  font-size: 13px;
+}
+
+.export-option small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.export-modal-backdrop {
+  display: none;
+  place-items: end center;
+  padding: 16px;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(17, 24, 39, .34);
+}
+
+.export-modal {
+  width: min(420px, 100%);
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(17, 24, 39, .22);
+}
+
+.export-modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.export-modal-heading h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  letter-spacing: -.03em;
+}
+
+.export-modal-hint {
+  margin: 14px 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.export-modal-options {
+  display: grid;
+  gap: 10px;
+}
+
+.export-modal .export-option {
+  min-height: 72px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+
+.export-modal .export-option:hover {
+  border-color: #bcd2fb;
+  background: var(--blue-soft);
+}
 .workspace { width: 100%; max-width: 1680px; display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 24px; margin: 0 auto; padding: 24px clamp(16px, 2.6vw, 36px) 56px; align-items: start; background: radial-gradient(circle at 72% 6%, rgba(219, 234, 254, .32), transparent 28rem); }
 .manager-panel, .editor-column, .preview-column { min-width: 0; }
 .manager-panel { min-height: calc(100vh - 116px); min-width: 0; display: grid; align-content: start; gap: 18px; margin: 0; padding: 0; position: sticky; top: 92px; animation: sidebar-in .5s var(--motion-spring) both; }
@@ -196,6 +335,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   padding: 0;
   margin: 0;
   border: 0;
+}
+.template-picker-content {
+  display: contents;
+}
+
+.template-mobile-toggle {
+  display: none;
 }
 
 .template-picker-group legend {
@@ -435,6 +581,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   border: 1px solid var(--line);
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(17, 24, 39, .025);
+}
+.layout-controls-content {
+  display: contents;
+}
+
+.layout-controls-mobile-toggle {
+  display: none;
 }
 
 .layout-controls-heading {
@@ -1000,6 +1153,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 @media (min-width: 769px) and (max-width: 1100px) {
+  .resume-workbench {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
   .workbench-heading {
     align-items: flex-start;
   }
@@ -1013,7 +1170,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .mobile-switcher {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-self: end;
     width: min(100%, 260px);
+    margin: 0 20px 20px;
   }
 
   .workbench-body {
@@ -1046,6 +1205,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     padding: 10px 14px;
   }
 
+
   .brand span:last-child {
     display: none;
   }
@@ -1056,8 +1216,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     max-width: 170px;
   }
 
-  .export-button {
+  .export-menu-trigger {
     padding: 0 10px;
+  }
+
+  .export-menu-dropdown {
+    display: none !important;
+  }
+
+  .export-modal-backdrop {
+    display: grid;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    animation: backdrop-in .24s var(--motion-standard) both;
+  }
+
+  .export-modal {
+    animation: drawer-in .28s var(--motion-spring) both;
   }
 
   .workspace {
@@ -1067,7 +1241,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     gap: 14px;
     background: var(--bg);
   }
-
   .workspace-main {
     width: 100%;
     display: block;
@@ -1078,18 +1251,78 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     width: 100%;
     grid-column: auto;
     grid-row: auto;
-    order: 2;
+    order: 0;
     padding: 0;
   }
 
+  .template-panel > .hint-text {
+    display: none;
+  }
+
+  .template-mobile-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    text-align: left;
+  }
+
+  .template-mobile-toggle > span {
+    display: grid;
+    gap: 3px;
+  }
+
+  .template-mobile-toggle small {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .template-mobile-toggle strong {
+    font-size: 15px;
+  }
+
+  .template-mobile-toggle svg {
+    color: var(--muted);
+    transition: color .2s var(--motion-standard);
+  }
+
+  .template-mobile-toggle:hover svg {
+    color: var(--blue);
+  }
+
+  .template-picker-content {
+    display: grid;
+    gap: 10px;
+  }
+
+  .template-picker-group.is-open .template-picker-content {
+    animation: section-in .3s var(--motion-standard) both;
+  }
+
+  .template-picker-group.is-collapsed .template-picker-content {
+    display: none;
+  }
+
+
   .resume-workbench {
+    grid-template-rows: auto auto minmax(0, 1fr);
     border-radius: 14px;
+    overflow: visible;
+    scroll-margin-top: 60px;
   }
 
   .workbench-heading {
     display: grid;
     justify-content: stretch;
-    gap: 14px;
+    gap: 12px;
     padding: 16px;
   }
 
@@ -1104,11 +1337,15 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     text-align: left;
     white-space: normal;
   }
-
   .mobile-switcher {
     display: grid;
+    position: sticky;
+    top: 60px;
+    z-index: 10;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
+    justify-self: stretch;
+    width: auto;
+    margin: 0 16px 16px;
   }
 
   .workbench-body {
@@ -1135,6 +1372,62 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .preview-stage {
     padding: 14px;
   }
+  .layout-controls-mobile-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    text-align: left;
+  }
+
+  .layout-controls-mobile-toggle > span {
+    display: grid;
+    gap: 3px;
+  }
+
+  .layout-controls-mobile-toggle small {
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  .layout-controls-mobile-toggle strong {
+    font-size: 15px;
+  }
+
+  .layout-controls-mobile-toggle svg {
+    color: var(--muted);
+    transition: transform .2s var(--motion-spring), color .2s var(--motion-standard);
+  }
+
+  .layout-controls-mobile-toggle:hover svg {
+    color: var(--blue);
+  }
+
+  .layout-controls-content {
+    display: grid;
+    gap: 16px;
+  }
+
+  .layout-controls-content > .layout-controls-heading {
+    display: none;
+  }
+
+  .layout-controls.is-open .layout-controls-content {
+    animation: section-in .3s var(--motion-standard) both;
+  }
+
+  .layout-controls.is-collapsed .layout-controls-content {
+    display: none;
+  }
+
 
   .manager-panel {
     min-height: 0;
@@ -1218,19 +1511,42 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 
 @media (max-width: 480px) {
-  .topbar-actions .primary-button,
-  .topbar-actions .secondary-button {
-    font-size: 0;
-    padding: 0 11px;
+  .topbar-actions {
+    gap: 6px;
   }
 
-  .topbar-actions .primary-button svg,
-  .topbar-actions .secondary-button svg {
-    margin: 0;
+  .topbar-actions .manager-toggle {
+    width: 38px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .topbar-actions .export-menu-trigger {
+    min-width: 0;
+    gap: 5px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .topbar-actions .export-menu-trigger > svg:first-child {
+    width: 14px;
+    height: 14px;
+  }
+
+  .topbar-actions .export-menu-trigger > svg:last-child {
+    width: 12px;
+    height: 12px;
   }
 
   .field-grid {
     grid-template-columns: 1fr;
+  }
+  .profile-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .profile-field-grid .field:nth-child(3),
+  .profile-field-grid .field:nth-child(4) {
+    grid-column: 1 / -1;
   }
 
   .field-row {
@@ -1312,6 +1628,29 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 @media (max-width: 380px) {
   .template-picker {
     grid-template-columns: 1fr;
+  }
+  .profile-field-grid {
+    grid-template-columns: 1fr;
+  }
+  .topbar {
+    gap: 8px;
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .topbar-actions {
+    gap: 4px;
+  }
+
+  .topbar-actions .manager-toggle {
+    width: 34px;
+  }
+
+  .topbar-actions .export-menu-trigger {
+    gap: 4px;
+    padding-right: 8px;
+    padding-left: 8px;
+    font-size: 11px;
   }
 }
 

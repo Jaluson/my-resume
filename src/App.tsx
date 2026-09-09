@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Download, FileText, Save, Sparkles, X } from 'lucide-react'
+import { FileText, Save, Sparkles, X } from 'lucide-react'
 import ResumeManager from './components/ResumeManager'
 import ResumePreview from './components/ResumePreview'
 import ResumeWorkspace from './components/ResumeWorkspace'
 import TemplatePicker from './components/TemplatePicker'
+import ExportMenu from './components/ExportMenu'
 import { clearRecovery, createBlankResume, loadResumeStore, makeId, saveResumeStore } from './store/resumeStore'
 import { exportResumeToDocx, exportResumeToPdf } from './utils/export'
 import type { Resume, ResumeStore } from './types/resume'
@@ -63,6 +64,7 @@ export default function App() {
 
   const runExport = async (format: 'pdf' | 'docx') => {
     if (!currentResume) return
+    const trigger = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null
     setExporting(format); setError('')
     try {
       if (format === 'pdf') {
@@ -71,12 +73,15 @@ export default function App() {
         if (!element || !bounds || bounds.width <= 0 || bounds.height <= 0) throw new Error('找不到有效的 PDF 预览')
         await exportResumeToPdf(currentResume, element)
       } else await exportResumeToDocx(currentResume)
-    } catch (exportError) { setError(exportError instanceof Error ? exportError.message : '导出失败，请稍后重试') } finally { setExporting(null) }
+    } catch (exportError) { setError(exportError instanceof Error ? exportError.message : '导出失败，请稍后重试') } finally {
+      setExporting(null)
+      window.setTimeout(() => trigger?.focus(), 0)
+    }
   }
 
   if (!currentResume) return null
   return <div className="app-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark"><Sparkles size={16} /></span><span>简历工坊</span></div><div className="topbar-center"><span className="topbar-label">当前简历</span><select value={currentResume.id} onChange={(event) => selectResume(event.target.value)} aria-label="选择当前简历">{store.resumes.map((resume) => <option value={resume.id} key={resume.id}>{resume.title || '未命名简历'}</option>)}</select></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite"><Save size={14} />{saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : '已保存'}</span><button className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} />管理简历</button><button className="export-button secondary-button" type="button" onClick={() => runExport('docx')} disabled={Boolean(exporting)} aria-label="导出 Word" aria-busy={exporting === 'docx'}><FileText size={16} />{exporting === 'docx' ? '生成中…' : 'Word'}</button><button className="export-button primary-button" type="button" onClick={() => runExport('pdf')} disabled={Boolean(exporting)} aria-label="导出 PDF" aria-busy={exporting === 'pdf'}><Download size={16} />{exporting === 'pdf' ? '生成中…' : '导出 PDF'}</button></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"><Sparkles size={16} /></span><span>简历工坊</span></div><div className="topbar-center"><span className="topbar-label">当前简历</span><select value={currentResume.id} onChange={(event) => selectResume(event.target.value)} aria-label="选择当前简历">{store.resumes.map((resume) => <option value={resume.id} key={resume.id}>{resume.title || '未命名简历'}</option>)}</select></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite"><Save size={14} />{saveState === 'saving' ? '保存中' : saveState === 'error' ? '保存失败' : '已保存'}</span><button className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
     <main className="workspace"><aside className="template-sidebar"><div className="template-panel"><div className="template-panel-heading"><div><p className="eyebrow">版式风格</p><h3>选择模板</h3></div><span>即时应用</span></div><TemplatePicker value={currentResume.templateId} onChange={(templateId) => updateResume({ ...currentResume, templateId })} /><p className="hint-text">Word 导出保留内容与强调色，不复制现代模板的侧栏结构；需要视觉版式时请导出 PDF。</p></div></aside><div className="workspace-main"><ResumeManager resumes={store.resumes} selectedId={currentResume.id} onSelect={selectResume} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} /><ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} /></div></main>
     <div className="export-capture" aria-hidden="true"><ResumePreview resume={currentResume} interactive={false} ref={exportRef} /></div>
     {loadWarning && <div className="notice" role="alert"><span>{loadWarning}</span><button className="icon-button" type="button" onClick={() => { clearRecovery(); setLoadWarning('') }} aria-label="关闭恢复提示"><X size={17} /></button></div>}
