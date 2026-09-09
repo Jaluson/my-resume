@@ -21,7 +21,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .primary-button:hover { background: #1d4ed8; }
 .secondary-button { color: #374151; background: #fff; border: 1px solid var(--line); }
 .secondary-button:hover { border-color: #c6cbd4; background: #f9fafb; }
-.workspace { width: min(1840px, 100%); display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 22px; margin: 0 auto; padding: 24px 28px 48px; align-items: start; }
+.workspace { width: 100%; display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; margin: 0 auto; padding: 18px 18px 36px; align-items: start; }
 .manager-panel, .editor-column, .preview-column { min-width: 0; }
 .manager-panel { min-height: calc(100vh - 116px); padding: 8px 0 0; position: sticky; top: 92px; }
 .panel-heading, .column-heading, .preview-heading, .template-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -215,12 +215,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .resume-paper { width: 210mm; max-width: none; min-height: 297mm; box-shadow: none; }
   .export-capture, .toast, .notice { display: none !important; }
 }
-.workspace-main { min-width: 0; display: grid; grid-template-columns: 240px minmax(400px, 1fr) minmax(420px, 560px); gap: 22px; align-items: start; }
+.workspace-main { min-width: 0; display: grid; grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .template-sidebar { min-width: 0; padding-top: 8px; position: sticky; top: 92px; }
 .template-sidebar .template-panel { margin-top: 0; }
 @media (max-width: 1180px) {
   .workspace { grid-template-columns: 210px minmax(0, 1fr); }
-  .workspace-main { grid-template-columns: 210px minmax(360px, 1fr) minmax(350px, 45%); gap: 16px; }
+  .workspace-main { grid-template-columns: 190px minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
 }
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 190px minmax(0, 1fr); }
