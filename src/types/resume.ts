@@ -41,8 +41,13 @@ export type ResumeSectionId = 'summary' | 'experience' | 'education' | 'skills' 
 
 export type ResumeLayout = {
   sectionOrder: ResumeSectionId[]
+  hiddenSections: ResumeSectionId[]
+  sectionTitles: Partial<Record<ResumeSectionId, string>>
   density: 'comfortable' | 'compact'
   fontScale: number
+  sectionGap: number
+  lineHeight: number
+  accentColor: string
   alignment: 'left' | 'center'
 }
 

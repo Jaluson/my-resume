@@ -20,7 +20,7 @@ const experience: ExperienceItem[] = [
 const education: EducationItem[] = [{ id: makeId(), school: '中国美术学院', degree: '本科', field: '视觉传达设计', startDate: '2014', endDate: '2018' }]
 const projects: ProjectItem[] = [{ id: makeId(), name: '协作工作台', description: '面向远程团队的任务协作与知识管理产品。', url: 'xiaolan.design/workspace', bullets: ['通过信息架构重组，让新用户上手时间降低 40%。'] }]
 
-const defaultLayout = (): ResumeLayout => ({ sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages'], density: 'comfortable', fontScale: 1, alignment: 'left' })
+const defaultLayout = (): ResumeLayout => ({ sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'languages'], hiddenSections: [], sectionTitles: {}, density: 'comfortable', fontScale: 1, sectionGap: 24, lineHeight: 1.55, accentColor: '', alignment: 'left' })
 
 export const createBlankResume = (title = '未命名简历'): Resume => ({
   id: makeId(), title, templateId: 'classic', updatedAt: now(),
@@ -60,14 +60,22 @@ const sectionIds: ResumeSectionId[] = ['summary', 'experience', 'education', 'sk
 const isLayout = (value: unknown): value is ResumeLayout => {
   if (!value || typeof value !== 'object') return false
   const layout = value as Partial<ResumeLayout>
-  return Array.isArray(layout.sectionOrder) && layout.sectionOrder.every((section) => sectionIds.includes(section)) && (layout.density === 'comfortable' || layout.density === 'compact') && typeof layout.fontScale === 'number' && layout.fontScale >= 0.85 && layout.fontScale <= 1.15 && (layout.alignment === 'left' || layout.alignment === 'center')
+  const hiddenSections = layout.hiddenSections === undefined || (Array.isArray(layout.hiddenSections) && layout.hiddenSections.every((section) => sectionIds.includes(section)))
+  const sectionTitles = layout.sectionTitles === undefined || (Boolean(layout.sectionTitles) && typeof layout.sectionTitles === 'object' && Object.values(layout.sectionTitles).every((title) => typeof title === 'string'))
+  return Array.isArray(layout.sectionOrder) && layout.sectionOrder.every((section) => sectionIds.includes(section)) && hiddenSections && sectionTitles && (layout.density === 'comfortable' || layout.density === 'compact') && typeof layout.fontScale === 'number' && layout.fontScale >= 0.85 && layout.fontScale <= 1.15 && (layout.sectionGap === undefined || (typeof layout.sectionGap === 'number' && layout.sectionGap >= 8 && layout.sectionGap <= 36)) && (layout.lineHeight === undefined || (typeof layout.lineHeight === 'number' && layout.lineHeight >= 1.3 && layout.lineHeight <= 1.8)) && (layout.accentColor === undefined || typeof layout.accentColor === 'string') && (layout.alignment === 'left' || layout.alignment === 'center')
 }
 const normalizeLayout = (layout: ResumeLayout | undefined): ResumeLayout => {
   const order = layout?.sectionOrder.filter((section, index, items) => sectionIds.includes(section) && items.indexOf(section) === index)
+  const titles = layout?.sectionTitles ?? {}
   return {
     sectionOrder: [...(order ?? []), ...sectionIds.filter((section) => !order?.includes(section))],
+    hiddenSections: layout?.hiddenSections?.filter((section, index, items) => sectionIds.includes(section) && items.indexOf(section) === index) ?? [],
+    sectionTitles: Object.fromEntries(Object.entries(titles).filter(([section, title]) => sectionIds.includes(section as ResumeSectionId) && typeof title === 'string' && title.trim())) as Partial<Record<ResumeSectionId, string>>,
     density: layout?.density === 'compact' ? 'compact' : 'comfortable',
     fontScale: layout && layout.fontScale >= 0.85 && layout.fontScale <= 1.15 ? layout.fontScale : 1,
+    sectionGap: layout && layout.sectionGap >= 8 && layout.sectionGap <= 36 ? layout.sectionGap : 24,
+    lineHeight: layout && layout.lineHeight >= 1.3 && layout.lineHeight <= 1.8 ? layout.lineHeight : 1.55,
+    accentColor: layout?.accentColor ?? '',
     alignment: layout?.alignment === 'center' ? 'center' : 'left',
   }
 }
