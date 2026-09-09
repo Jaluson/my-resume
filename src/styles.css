@@ -399,3 +399,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workbench-body > .editor-column, .workbench-body > .preview-column { padding: 12px; }
   .workbench-body > .preview-column { background: #fafbfc; }
 }
+@media (max-width: 768px) {
+  .workspace-main > .manager-panel { display: none; }
+}
