@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type Ref } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type Ref } from 'react'
 import { ArrowUp, Eye, PencilLine } from 'lucide-react'
 import type { Resume } from '../types/resume'
 import ResumeEditor from './ResumeEditor'
@@ -13,9 +13,51 @@ type ResumeWorkspaceProps = {
 
 type MobilePane = 'editor' | 'preview'
 type DragPosition = { left: number; top: number }
-type DragSession = { pointerId: number; startX: number; startY: number; originLeft: number; originTop: number; moved: boolean }
+type DragSession = {
+  pointerId: number
+  startX: number
+  startY: number
+  originLeft: number
+  originTop: number
+  currentLeft: number
+  currentTop: number
+  moved: boolean
+}
+type ViewportBounds = { minLeft: number; maxLeft: number; minTop: number; maxTop: number }
+
+const DRAG_THRESHOLD = 4
+const VIEWPORT_EDGE_GAP = 8
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+const getViewportBounds = (element: HTMLElement): ViewportBounds => {
+  const rect = element.getBoundingClientRect()
+  const viewport = window.visualViewport
+  const viewportLeft = viewport?.offsetLeft ?? 0
+  const viewportTop = viewport?.offsetTop ?? 0
+  const viewportWidth = viewport && viewport.width > 0 ? viewport.width : window.innerWidth
+  const viewportHeight = viewport && viewport.height > 0 ? viewport.height : window.innerHeight
+  return {
+    minLeft: viewportLeft + VIEWPORT_EDGE_GAP,
+    maxLeft: Math.max(viewportLeft + VIEWPORT_EDGE_GAP, viewportLeft + viewportWidth - rect.width - VIEWPORT_EDGE_GAP),
+    minTop: viewportTop + VIEWPORT_EDGE_GAP,
+    maxTop: Math.max(viewportTop + VIEWPORT_EDGE_GAP, viewportTop + viewportHeight - rect.height - VIEWPORT_EDGE_GAP),
+  }
+}
+const constrainPosition = (position: DragPosition, element: HTMLElement): DragPosition => {
+  const bounds = getViewportBounds(element)
+  return {
+    left: clamp(position.left, bounds.minLeft, bounds.maxLeft),
+    top: clamp(position.top, bounds.minTop, bounds.maxTop),
+  }
+}
+const snapToNearestEdge = (position: DragPosition, element: HTMLElement): DragPosition => {
+  const bounds = getViewportBounds(element)
+  const constrained = constrainPosition(position, element)
+  return {
+    left: constrained.left - bounds.minLeft <= bounds.maxLeft - constrained.left ? bounds.minLeft : bounds.maxLeft,
+    top: constrained.top,
+  }
+}
 
 export default function ResumeWorkspace({ resume, onChange, previewRef }: ResumeWorkspaceProps) {
   const [mobilePane, setMobilePane] = useState<MobilePane>('editor')
@@ -25,7 +67,85 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
   const workbenchRef = useRef<HTMLElement>(null)
   const switcherRef = useRef<HTMLDivElement>(null)
   const dragSessionRef = useRef<DragSession | null>(null)
+  const dragPositionRef = useRef<DragPosition | null>(null)
   const suppressClickRef = useRef(false)
+  dragPositionRef.current = dragPosition
+  const finishDrag = (event: PointerEvent) => {
+    const switcher = switcherRef.current
+    const session = dragSessionRef.current
+    if (!switcher || !session || session.pointerId !== event.pointerId) return
+    dragSessionRef.current = null
+    setDragging(false)
+    if (session.moved) {
+      const snappedPosition = snapToNearestEdge({
+        left: session.currentLeft,
+        top: session.currentTop,
+      }, switcher)
+      dragPositionRef.current = snappedPosition
+      setDragPosition(snappedPosition)
+      suppressClickRef.current = true
+      window.setTimeout(() => { suppressClickRef.current = false }, 0)
+    }
+    if (switcher.hasPointerCapture(event.pointerId)) switcher.releasePointerCapture(event.pointerId)
+  }
+  useEffect(() => {
+    const switcher = switcherRef.current
+    if (!switcher) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
+      if (getComputedStyle(switcher).position !== 'fixed' || dragSessionRef.current) return
+      const rect = switcher.getBoundingClientRect()
+      dragSessionRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        originLeft: rect.left,
+        originTop: rect.top,
+        currentLeft: rect.left,
+        currentTop: rect.top,
+        moved: false,
+      }
+    }
+    const onPointerMove = (event: PointerEvent) => {
+      const session = dragSessionRef.current
+      if (!session || session.pointerId !== event.pointerId) return
+      const deltaX = event.clientX - session.startX
+      const deltaY = event.clientY - session.startY
+      if (!session.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) return
+      if (!session.moved) {
+        session.moved = true
+        setDragging(true)
+        try {
+          switcher.setPointerCapture(event.pointerId)
+        } catch {
+          // Window listeners still keep the drag alive when capture is unavailable.
+        }
+      }
+      event.preventDefault()
+      const position = constrainPosition({
+        left: session.originLeft + deltaX,
+        top: session.originTop + deltaY,
+      }, switcher)
+      session.currentLeft = position.left
+      session.currentTop = position.top
+      dragPositionRef.current = position
+      setDragPosition(position)
+    }
+    const onPointerEnd = (event: PointerEvent) => finishDrag(event)
+    switcher.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('pointermove', onPointerMove, { capture: true, passive: false })
+    window.addEventListener('pointerup', onPointerEnd, true)
+    window.addEventListener('pointercancel', onPointerEnd, true)
+    switcher.addEventListener('lostpointercapture', onPointerEnd)
+    return () => {
+      switcher.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('pointermove', onPointerMove, true)
+      window.removeEventListener('pointerup', onPointerEnd, true)
+      window.removeEventListener('pointercancel', onPointerEnd, true)
+      switcher.removeEventListener('lostpointercapture', onPointerEnd)
+      if (dragSessionRef.current) dragSessionRef.current = null
+    }
+  }, [])
   const switchMobilePane = (nextPane: MobilePane) => {
     setMobilePane(nextPane)
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1100px)').matches) {
@@ -43,37 +163,57 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
     }
     handlePaneSelect(nextPane)
   }
-  const onSwitcherPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return
-    const rect = event.currentTarget.getBoundingClientRect()
-    dragSessionRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originLeft: rect.left, originTop: rect.top, moved: false }
-    setDragging(true)
-  }
-  const onSwitcherPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const session = dragSessionRef.current
-    if (!session || session.pointerId !== event.pointerId) return
-    const deltaX = event.clientX - session.startX
-    const deltaY = event.clientY - session.startY
-    if (!session.moved && Math.hypot(deltaX, deltaY) < 4) return
-    session.moved = true
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.setPointerCapture(event.pointerId)
-    const rect = event.currentTarget.getBoundingClientRect()
-    setDragPosition({
-      left: clamp(session.originLeft + deltaX, 8, Math.max(8, window.innerWidth - rect.width - 8)),
-      top: clamp(session.originTop + deltaY, 8, Math.max(8, window.innerHeight - rect.height - 8)),
-    })
-  }
-  const onSwitcherPointerEnd = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const session = dragSessionRef.current
-    if (!session || session.pointerId !== event.pointerId) return
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
-    dragSessionRef.current = null
-    setDragging(false)
-    if (session.moved) {
-      suppressClickRef.current = true
-      window.setTimeout(() => { suppressClickRef.current = false }, 0)
+  useLayoutEffect(() => {
+    const switcher = switcherRef.current
+    if (!switcher) return
+    let frameId: number | null = null
+    const reclamp = () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null
+        const element = switcherRef.current
+        const position = dragPositionRef.current
+        if (!element || !position) return
+        const constrained = constrainPosition(position, element)
+        if (constrained.left === position.left && constrained.top === position.top) return
+        dragPositionRef.current = constrained
+        setDragPosition(constrained)
+      })
     }
-  }
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target === switcher && event.propertyName === 'width') reclamp()
+    }
+    switcher.addEventListener('transitionend', onTransitionEnd)
+    reclamp()
+    return () => {
+      switcher.removeEventListener('transitionend', onTransitionEnd)
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+    }
+  }, [switcherExpanded])
+  useEffect(() => {
+    let frameId: number | null = null
+    const reclamp = () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null
+        const element = switcherRef.current
+        const position = dragPositionRef.current
+        if (!element || !position) return
+        const constrained = constrainPosition(position, element)
+        if (constrained.left === position.left && constrained.top === position.top) return
+        dragPositionRef.current = constrained
+        setDragPosition(constrained)
+      })
+    }
+    const viewport = window.visualViewport
+    window.addEventListener('resize', reclamp)
+    viewport?.addEventListener('resize', reclamp)
+    return () => {
+      window.removeEventListener('resize', reclamp)
+      viewport?.removeEventListener('resize', reclamp)
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+    }
+  }, [])
   useEffect(() => {
     if (!switcherExpanded) return
     const collapseOnPointer = (event: PointerEvent) => {
@@ -96,13 +236,6 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
       ref={switcherRef}
       className={`mobile-switcher${switcherExpanded ? ' is-expanded' : ''}${dragging ? ' is-dragging' : ''}`}
       style={dragPosition ? { left: dragPosition.left, top: dragPosition.top, right: 'auto' } : undefined}
-      role="tablist"
-      aria-label="切换工作区面板"
-      aria-expanded={switcherExpanded}
-      onPointerDown={onSwitcherPointerDown}
-      onPointerMove={onSwitcherPointerMove}
-      onPointerUp={onSwitcherPointerEnd}
-      onPointerCancel={onSwitcherPointerEnd}
     >
       <button id="resume-editor-tab" className={mobilePane === 'editor' ? 'is-active' : ''} type="button" role="tab" aria-label="编辑" title="编辑" aria-selected={mobilePane === 'editor'} aria-controls="resume-editor-panel" onClick={() => selectPane('editor')}><PencilLine size={15} aria-hidden="true" /><span className="mobile-switcher-label">编辑</span></button>
       <button id="resume-preview-tab" className={mobilePane === 'preview' ? 'is-active' : ''} type="button" role="tab" aria-label="预览" title="预览" aria-selected={mobilePane === 'preview'} aria-controls="resume-preview-panel" onClick={() => selectPane('preview')}><Eye size={15} aria-hidden="true" /><span className="mobile-switcher-label">预览</span></button>

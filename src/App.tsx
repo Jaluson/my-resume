@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileText, Save, Sparkles, X } from 'lucide-react'
+import { FileText, Save, X } from 'lucide-react'
 import ResumeManager from './components/ResumeManager'
 import ResumePreview from './components/ResumePreview'
 import ResumeWorkspace from './components/ResumeWorkspace'
@@ -12,6 +12,26 @@ import type { ResumeStoreLoad } from './store/resumeStore'
 
 type SaveState = 'saved' | 'saving' | 'error'
 const touch = (resume: Resume): Resume => ({ ...resume, updatedAt: new Date().toISOString() })
+
+function BrandMark() {
+  return (
+    <svg className="brand-mark-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="brand-mark-gradient" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2f6ff5" />
+          <stop offset="1" stopColor="#1746b8" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="9" fill="url(#brand-mark-gradient)" />
+      <path d="M9.25 6.75h9.1l4.4 4.4v13.1H9.25z" fill="none" stroke="#fff" strokeWidth="1.55" strokeLinejoin="round" />
+      <path d="M18.35 6.75v4.4h4.4" fill="none" stroke="#bfdbfe" strokeWidth="1.55" strokeLinejoin="round" />
+      <path d="M12.3 15h6.2M12.3 18.35h4.35" fill="none" stroke="#dbeafe" strokeWidth="1.45" strokeLinecap="round" />
+      <path d="m12.1 23.55 1.05-3.2 7.85-7.85 2.55 2.55-7.85 7.85z" fill="#fff" stroke="#fff" strokeWidth=".7" strokeLinejoin="round" />
+      <path d="m19.55 13.75 2.55 2.55" fill="none" stroke="#78a9ff" strokeWidth="1.15" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 
 export default function App() {
   const [loaded] = useState<ResumeStoreLoad>(() => loadResumeStore())
@@ -85,7 +105,7 @@ export default function App() {
 
   if (!currentResume) return null
   return <div className={`app-shell${exporting ? ' is-exporting' : ''}`}>
-    <header className="topbar"><div className="brand"><span className="brand-mark"><Sparkles size={16} /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite">{saveState === 'saving' ? <LoadingIndicator label="保存中" /> : <><Save size={14} />{saveState === 'error' ? '保存失败' : '已保存'}</>}</span><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"><BrandMark /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite">{saveState === 'saving' ? <LoadingIndicator label="保存中" /> : <><Save size={14} />{saveState === 'error' ? '保存失败' : '已保存'}</>}</span><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
     {exporting && <LoadingIndicator fullScreen label={exporting === 'pdf' ? '正在生成 PDF' : '正在生成 Word'} detail="正在整理版式与内容，请稍候" />}
     <main className="workspace"><div className="workspace-main"><ResumeManager resumes={store.resumes} selectedId={currentResume.id} onSelect={selectResume} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} mobileTriggerRef={mobileManagerTriggerRef} /><ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} /></div></main>
     <div className="export-capture" aria-hidden="true"><ResumePreview resume={currentResume} interactive={false} ref={exportRef} /></div>
