@@ -236,3 +236,30 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .preview-editable:hover { background: rgba(37, 99, 235, .07); }
 .preview-editable:focus { outline: 0; background: rgba(37, 99, 235, .08); box-shadow: 0 0 0 2px rgba(37, 99, 235, .18); }
 .preview-editable.is-empty::before { content: attr(data-placeholder); color: #9ca3af; font-weight: 400; }
+.template-thumb-editorial { background: linear-gradient(135deg, #ffe4e6 0 28%, #fff1f2 28%); }
+.template-thumb-editorial i:first-child { width: 48%; background: #be123c; }
+.template-thumb-editorial i:nth-child(2) { width: 66%; background: #fda4af; }
+.template-thumb-executive { background: linear-gradient(to bottom, #134e4a 0 24px, #f0fdfa 24px); }
+.template-thumb-executive i:first-child { width: 44%; background: #5eead4; }
+.template-thumb-compact { background: linear-gradient(135deg, #ede9fe 0 24px, #fafafa 24px); }
+.template-thumb-compact i:first-child { width: 38%; background: #7c3aed; }
+.resume-editorial .resume-main { padding: 60px 70px; }
+.resume-editorial .resume-header { border-bottom: 0; padding-bottom: 16px; }
+.resume-editorial .resume-header h1 { color: var(--template-accent, #be123c); font-family: Georgia, 'Times New Roman', serif; font-weight: 600; }
+.resume-editorial .resume-section h2 { padding-left: 10px; border-left: 3px solid var(--template-accent, #be123c); color: #374151; letter-spacing: .14em; }
+.resume-executive .resume-main { padding: 0 62px 62px; }
+.resume-executive .resume-header { margin: 0 -62px; padding: 52px 62px 30px; background: #134e4a; border-bottom: 0; }
+.resume-executive .resume-header h1 { color: #fff; }
+.resume-executive .resume-role { color: #99f6e4; }
+.resume-executive .resume-contact { color: #ccfbf1; }
+.resume-executive .resume-section:first-of-type { margin-top: 34px; }
+.resume-executive .resume-section h2 { color: var(--template-accent, #0f766e); }
+.resume-compact .resume-main { padding: 46px 54px; }
+.resume-compact .resume-header { padding-bottom: 16px; }
+.resume-compact .resume-section { margin-top: 15px; }
+.resume-compact .resume-section h2 { margin-bottom: 7px; font-size: 11px; }
+.resume-compact .resume-entry { margin-top: 9px; }
+@media (max-width: 768px) {
+  .resume-executive .resume-main { padding: 0 23px 30px; }
+  .resume-executive .resume-header { margin: 0 -23px; padding: 30px 23px; }
+}

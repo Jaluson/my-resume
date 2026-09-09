@@ -57,7 +57,7 @@ const isProject = (value: unknown): value is ProjectItem => {
 const isResume = (value: unknown): value is Resume => {
   if (!value || typeof value !== 'object') return false
   const item = value as Partial<Resume>
-  return isString(item.id) && isString(item.title) && (item.templateId === 'classic' || item.templateId === 'modern' || item.templateId === 'minimal') && isString(item.updatedAt) && isProfile(item.profile) && isString(item.summary) && Array.isArray(item.experience) && item.experience.every(isExperience) && Array.isArray(item.education) && item.education.every(isEducation) && isStringArray(item.skills) && Array.isArray(item.projects) && item.projects.every(isProject) && isStringArray(item.languages)
+  return isString(item.id) && isString(item.title) && (item.templateId === 'classic' || item.templateId === 'modern' || item.templateId === 'minimal' || item.templateId === 'editorial' || item.templateId === 'executive' || item.templateId === 'compact') && isString(item.updatedAt) && isProfile(item.profile) && isString(item.summary) && Array.isArray(item.experience) && item.experience.every(isExperience) && Array.isArray(item.education) && item.education.every(isEducation) && isStringArray(item.skills) && Array.isArray(item.projects) && item.projects.every(isProject) && isStringArray(item.languages)
 }
 const isStoreShape = (value: unknown): value is { selectedResumeId: string; resumes: unknown[] } => {
   if (!value || typeof value !== 'object') return false
