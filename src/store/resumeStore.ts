@@ -73,7 +73,7 @@ const normalizeLayout = (layout: ResumeLayout | undefined): ResumeLayout => {
     sectionTitles: Object.fromEntries(Object.entries(titles).filter(([section, title]) => sectionIds.includes(section as ResumeSectionId) && typeof title === 'string' && title.trim())) as Partial<Record<ResumeSectionId, string>>,
     density: layout?.density === 'compact' ? 'compact' : 'comfortable',
     fontScale: layout && layout.fontScale >= 0.85 && layout.fontScale <= 1.15 ? layout.fontScale : 1,
-    sectionGap: layout && layout.sectionGap >= 8 && layout.sectionGap <= 36 ? layout.sectionGap : 24,
+    sectionGap: layout && layout.sectionGap >= 8 && layout.sectionGap <= 36 ? layout.sectionGap : layout?.density === 'compact' ? 14 : 24,
     lineHeight: layout && layout.lineHeight >= 1.3 && layout.lineHeight <= 1.8 ? layout.lineHeight : 1.55,
     accentColor: layout?.accentColor ?? '',
     alignment: layout?.alignment === 'center' ? 'center' : 'left',

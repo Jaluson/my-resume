@@ -24,12 +24,12 @@ function LayoutControls({ resume, onChange }: { resume: Resume; onChange: (resum
   const updateLayout = (patch: Partial<Resume['layout']>) => onChange({ ...resume, layout: { ...resume.layout, ...patch } })
   const toggleSection = (section: ResumeSectionId, visible: boolean) => updateLayout({ hiddenSections: visible ? resume.layout.hiddenSections.filter((item) => item !== section) : [...resume.layout.hiddenSections, section] })
   const setSectionTitle = (section: ResumeSectionId, value: string) => updateLayout({ sectionTitles: { ...resume.layout.sectionTitles, [section]: value } })
+  const setDensity = (density: Resume['layout']['density']) => updateLayout({ density, sectionGap: density === 'compact' ? 14 : 24 })
   return <section className="layout-controls" aria-labelledby="layout-controls-title">
     <div className="layout-controls-heading"><div><p className="eyebrow">自由排版</p><h2 id="layout-controls-title">调整版式</h2></div><span className="hint-text">预览即时同步</span></div>
     <div className="layout-control-grid">
-      <label className="field"><span>内容密度</span><select value={resume.layout.density} onChange={(event) => updateLayout({ density: event.target.value as Resume['layout']['density'] })}><option value="comfortable">舒适留白</option><option value="compact">紧凑一页</option></select></label>
+      <label className="field"><span>内容密度</span><select value={resume.layout.density} onChange={(event) => setDensity(event.target.value as Resume['layout']['density'])}><option value="comfortable">舒适留白</option><option value="compact">紧凑一页</option></select></label>
       <label className="field"><span>文字大小</span><input type="range" min="0.85" max="1.15" step="0.05" value={resume.layout.fontScale} onChange={(event) => updateLayout({ fontScale: Number(event.target.value) })} /></label>
-      <label className="field"><span>文字对齐</span><select value={resume.layout.alignment} onChange={(event) => updateLayout({ alignment: event.target.value as Resume['layout']['alignment'] })}><option value="left">左对齐</option><option value="center">居中对齐</option></select></label>
       <label className="field"><span>区块间距</span><input type="range" min="8" max="36" step="1" value={resume.layout.sectionGap} onChange={(event) => updateLayout({ sectionGap: Number(event.target.value) })} /></label>
       <label className="field"><span>行高</span><input type="range" min="1.3" max="1.8" step="0.05" value={resume.layout.lineHeight} onChange={(event) => updateLayout({ lineHeight: Number(event.target.value) })} /></label>
       <label className="field color-field"><span>强调色</span><input type="color" value={resume.layout.accentColor || '#2563eb'} onChange={(event) => updateLayout({ accentColor: event.target.value })} /></label>
