@@ -1,4 +1,6 @@
 import type { Paragraph as DocxParagraph } from 'docx'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import type { Resume } from '../types/resume'
 import { templateById } from '../data/templates'
 import { formatResumePeriod, getResumeContent, toSafeExternalUrl } from './resume'
@@ -23,11 +25,24 @@ export async function exportResumeToPdf(resume: Resume, element: HTMLElement): P
   if (typeof window === 'undefined') throw new Error('PDF 导出只能在浏览器中执行')
   const bounds = element.getBoundingClientRect()
   if (bounds.width <= 0 || bounds.height <= 0) throw new Error('找不到有效的 PDF 预览尺寸')
-  // Exporters stay out of the initial editor chunk; these modules are only needed after an export action.
-  await import('html2canvas')
-  const { jsPDF } = await import('jspdf')
+  const canvas = await html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false, windowWidth: 794 })
   const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
-  await pdf.html(element, { x: 0, y: 0, width: 210, windowWidth: 794, autoPaging: 'text', html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false } })
+  const pageWidth = 210
+  const pageHeight = 297
+  const sourcePageHeight = Math.floor(canvas.width * pageHeight / pageWidth)
+  let sourceOffset = 0
+  let pageIndex = 0
+  while (sourceOffset < canvas.height) {
+    const sliceHeight = Math.min(sourcePageHeight, canvas.height - sourceOffset)
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvas.width
+    pageCanvas.height = sliceHeight
+    pageCanvas.getContext('2d')?.drawImage(canvas, 0, sourceOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight)
+    if (pageIndex > 0) pdf.addPage()
+    pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, sliceHeight * pageWidth / canvas.width)
+    sourceOffset += sliceHeight
+    pageIndex += 1
+  }
   pdf.save(`${sanitizeFileName(resume.title)}.pdf`)
 }
 
