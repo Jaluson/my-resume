@@ -8,6 +8,7 @@ import TemplatePicker from './TemplatePicker'
 type ResumeManagerProps = { resumes: Resume[]; selectedId: string; templateId: TemplateId; onSelect: (id: string) => void; onTemplateChange: (templateId: TemplateId) => void; onCreate: () => void; onDuplicate: (id: string) => void; onRename: (id: string, title: string) => void; onDelete: (id: string) => void; mobileOpen: boolean; onCloseMobile: () => void; mobileTriggerRef: RefObject<HTMLButtonElement> }
 const updatedAtFormatter = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' })
 const mobileMediaQuery = '(max-width: 1100px)'
+const TEMPLATE_TRANSITION_MS = 360
 
 const formatUpdatedAt = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? '刚刚更新' : updatedAtFormatter.format(date) }
 
@@ -40,7 +41,7 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
     templateTransitionTimerRef.current = window.setTimeout(() => {
       templateTransitionTimerRef.current = null
       setTemplateTransitioning(false)
-    }, 480)
+    }, TEMPLATE_TRANSITION_MS)
     return () => {
       if (templateTransitionTimerRef.current !== null) window.clearTimeout(templateTransitionTimerRef.current)
     }

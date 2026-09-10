@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCircle2, FileText, Save, X } from 'lucide-react'
+import { ArrowUp, CheckCircle2, FileText, X } from 'lucide-react'
 import ResumeManager from './components/ResumeManager'
 import ResumePreview from './components/ResumePreview'
 import ResumeWorkspace from './components/ResumeWorkspace'
@@ -10,7 +10,6 @@ import LoadingIndicator from './components/LoadingIndicator'
 import type { Resume, ResumeStore } from './types/resume'
 import type { ResumeStoreLoad } from './store/resumeStore'
 
-type SaveState = 'unsaved' | 'saved' | 'saving' | 'error'
 const touch = (resume: Resume): Resume => ({ ...resume, updatedAt: new Date().toISOString() })
 
 function BrandMark() {
@@ -36,13 +35,13 @@ function BrandMark() {
 export default function App() {
   const [loaded] = useState<ResumeStoreLoad>(() => loadResumeStore())
   const [store, setStore] = useState<ResumeStore>(loaded.store)
-  const [saveState, setSaveState] = useState<SaveState>(() => loaded.status === 'stored' ? 'saved' : loaded.status === 'migrated' ? 'saving' : 'unsaved')
   const [saveError, setSaveError] = useState(false)
   const [exporting, setExporting] = useState<ExportFormat | null>(null)
   const [exportSuccess, setExportSuccess] = useState<ExportFormat | null>(null)
   const [error, setError] = useState('')
   const [loadWarning, setLoadWarning] = useState(loaded.warning ?? '')
   const [mobileManagerOpen, setMobileManagerOpen] = useState(false)
+  const [backToTopPhase, setBackToTopPhase] = useState<'hidden' | 'visible' | 'exiting'>('hidden')
   const [dirty, setDirty] = useState(loaded.status === 'migrated')
   const previewRef = useRef<HTMLDivElement>(null)
   const exportRef = useRef<HTMLDivElement>(null)
@@ -53,9 +52,7 @@ export default function App() {
   const currentResume = useMemo(() => store.resumes.find((resume) => resume.id === store.selectedResumeId) ?? store.resumes[0], [store])
 
   const persist = () => {
-    setSaveState('saving')
     const saved = saveResumeStore(storeRef.current)
-    setSaveState(saved ? 'saved' : 'error')
     setSaveError(!saved)
     if (saved) setDirty(false)
   }
@@ -94,9 +91,24 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [exportSuccess])
 
-  const updateStore = (updater: (current: ResumeStore) => ResumeStore) => { setSaveState('saving'); setSaveError(false); setDirty(true); setStore(updater) }
+  const updateStore = (updater: (current: ResumeStore) => ResumeStore) => { setSaveError(false); setDirty(true); setStore(updater) }
   const updateResume = (nextResume: Resume) => updateStore((current) => ({ ...current, resumes: current.resumes.map((resume) => resume.id === nextResume.id ? touch(nextResume) : resume) }))
   const selectResume = (id: string) => updateStore((current) => ({ ...current, selectedResumeId: id }))
+  useEffect(() => {
+    const onScroll = () => setBackToTopPhase((phase) => {
+      if (window.scrollY > 240) return 'visible'
+      return phase === 'visible' ? 'exiting' : phase
+    })
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  useEffect(() => {
+    if (backToTopPhase !== 'exiting') return undefined
+    const duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 120 : 220
+    const timer = window.setTimeout(() => setBackToTopPhase('hidden'), duration)
+    return () => window.clearTimeout(timer)
+  }, [backToTopPhase])
   const createResume = () => { const resume = createBlankResume(); updateStore((current) => ({ selectedResumeId: resume.id, resumes: [...current.resumes, resume] })) }
   const duplicateResume = (id: string) => {
     const source = storeRef.current.resumes.find((resume) => resume.id === id)
@@ -140,7 +152,7 @@ export default function App() {
 
   if (!currentResume) return null
   return <div className={`app-shell${exporting ? ' is-exporting' : ''}`}>
-    <header className="topbar"><div className="brand"><span className="brand-mark"><BrandMark /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite">{saveState === 'saving' ? <LoadingIndicator label="保存中" /> : <><Save size={14} aria-hidden="true" />{saveState === 'error' ? '保存失败' : saveState === 'unsaved' ? '未保存' : '已保存'}</>}</span><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"><BrandMark /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
     {exporting && <LoadingIndicator fullScreen label={exporting === 'pdf' ? '正在生成 PDF' : '正在生成 Word'} detail="正在整理版式与内容，请稍候" />}
     <main className="workspace">
       <div className="workspace-main">
@@ -148,6 +160,7 @@ export default function App() {
         <ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} />
       </div>
     </main>
+    <button className={`back-to-top-pin${backToTopPhase === 'visible' ? ' is-visible' : ''}${backToTopPhase === 'exiting' ? ' is-exiting' : ''}`} type="button" onClick={() => { const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'; window.scrollTo({ top: 0, behavior }) }} aria-label="返回顶层" aria-hidden={backToTopPhase !== 'visible'} tabIndex={backToTopPhase === 'visible' ? 0 : -1}><ArrowUp size={16} aria-hidden="true" /><span>顶层</span></button>
     <div className="export-capture" aria-hidden="true"><ResumePreview resume={currentResume} interactive={false} ref={exportRef} /></div>
     {exportSuccess && <div className="export-success-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) closeExportSuccess() }}>
       <div className="export-success-modal" role="dialog" aria-modal="true" aria-labelledby="export-success-title" aria-describedby="export-success-hint">

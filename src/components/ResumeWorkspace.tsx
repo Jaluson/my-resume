@@ -30,6 +30,8 @@ type ViewportBounds = { minLeft: number; maxLeft: number; minTop: number; maxTop
 const DRAG_THRESHOLD = 4
 const SWIPE_THRESHOLD = 10
 const VIEWPORT_EDGE_GAP = 8
+const TRANSITION_SETTLE_MS = 360
+const SWITCHER_FEEDBACK_MS = 520
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 const getViewportBounds = (element: HTMLElement): ViewportBounds => {
@@ -83,7 +85,7 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
     transitionTimerRef.current = window.setTimeout(() => {
       transitionTimerRef.current = null
       setTransitionKind(null)
-    }, 480)
+    }, TRANSITION_SETTLE_MS)
     return () => {
       if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current)
     }
@@ -92,7 +94,7 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
     if (previousPaneRef.current === mobilePane) return
     previousPaneRef.current = mobilePane
     setSwitcherPulse(true)
-    const timer = window.setTimeout(() => setSwitcherPulse(false), 760)
+    const timer = window.setTimeout(() => setSwitcherPulse(false), SWITCHER_FEEDBACK_MS)
     return () => window.clearTimeout(timer)
   }, [mobilePane])
   const dragSessionRef = useRef<DragSession | null>(null)
