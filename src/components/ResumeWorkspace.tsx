@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react'
-import { Eye, PencilLine } from 'lucide-react'
+import { Eye, FileText, PencilLine } from 'lucide-react'
 import type { Resume } from '../types/resume'
 import ResumeEditor from './ResumeEditor'
 import TemplatePicker from './TemplatePicker'
@@ -66,19 +66,28 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
   const [mobilePane, setMobilePane] = useState<MobilePane>('editor')
   const [dragPosition, setDragPosition] = useState<DragPosition | null>(null)
   const [dragging, setDragging] = useState(false)
-  const [resumeTransitioning, setResumeTransitioning] = useState(false)
+  const [transitionKind, setTransitionKind] = useState<'resume' | 'template' | null>(null)
   const [switcherPulse, setSwitcherPulse] = useState(false)
   const previousPaneRef = useRef<MobilePane>(mobilePane)
   const workbenchRef = useRef<HTMLElement>(null)
   const switcherRef = useRef<HTMLDivElement>(null)
-  const previousResumeIdRef = useRef(resume.id)
+  const previousResumeRef = useRef({ id: resume.id, templateId: resume.templateId })
+  const transitionTimerRef = useRef<number | null>(null)
   useEffect(() => {
-    if (previousResumeIdRef.current === resume.id) return
-    previousResumeIdRef.current = resume.id
-    setResumeTransitioning(true)
-    const timer = window.setTimeout(() => setResumeTransitioning(false), 340)
-    return () => window.clearTimeout(timer)
-  }, [resume.id])
+    const previous = previousResumeRef.current
+    const kind = previous.id !== resume.id ? 'resume' : previous.templateId !== resume.templateId ? 'template' : null
+    previousResumeRef.current = { id: resume.id, templateId: resume.templateId }
+    if (!kind) return
+    setTransitionKind(kind)
+    if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current)
+    transitionTimerRef.current = window.setTimeout(() => {
+      transitionTimerRef.current = null
+      setTransitionKind(null)
+    }, 480)
+    return () => {
+      if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current)
+    }
+  }, [resume.id, resume.templateId])
   useEffect(() => {
     if (previousPaneRef.current === mobilePane) return
     previousPaneRef.current = mobilePane
@@ -217,7 +226,6 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
       })
     }
     const viewport = window.visualViewport
-    window.addEventListener('resize', reclamp)
     viewport?.addEventListener('resize', reclamp)
     return () => {
       window.removeEventListener('resize', reclamp)
@@ -226,7 +234,12 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
     }
   }, [])
 
-  return <section ref={workbenchRef} className={`resume-workbench${resumeTransitioning ? ' is-resume-changing' : ''}`}>
+  return <section ref={workbenchRef} className={`resume-workbench${transitionKind ? ' is-switching' : ''}`} aria-busy={transitionKind !== null}>
+    <div className={`workspace-switch-loading${transitionKind ? ' is-visible' : ''}`} aria-hidden={transitionKind === null}>
+      <span className="workspace-switch-loading-visual" aria-hidden="true"><span className="workspace-switch-loading-sheet workspace-switch-loading-sheet-back"><i /><i /><i /></span><span className="workspace-switch-loading-sheet workspace-switch-loading-sheet-front"><i /><i /><i /><FileText size={12} strokeWidth={2.2} /></span><span className="workspace-switch-loading-scan" /></span>
+      <span className="workspace-switch-loading-copy"><strong>{transitionKind === 'template' ? '正在应用模板' : '正在切换简历'}</strong><small>内容与预览同步中</small></span>
+      <span className="workspace-switch-loading-progress" aria-hidden="true"><span /></span>
+    </div>
     <div
       ref={switcherRef}
       className={`mobile-switcher${dragging ? ' is-dragging' : ''}${switcherPulse ? ' is-switched' : ''}`}
@@ -251,7 +264,7 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
         <ResumeEditor resume={resume} onChange={onChange} />
       </section>
       <section id="resume-preview-panel" className={`preview-column ${mobilePane === 'preview' ? 'mobile-visible' : 'mobile-hidden'}`} role="tabpanel" aria-labelledby="resume-preview-tab">
-        <div className="preview-heading"><div><p className="eyebrow">实时预览</p><h2>你的简历成稿</h2></div><span className="pane-status"><Eye size={14} aria-hidden="true" />A4 画布</span></div>
+        <div className="preview-heading"><div><p className="eyebrow">实时预览</p></div></div>
         <div className="preview-stage"><ResumePreview resume={resume} onChange={onChange} ref={previewRef} /></div>
       </section>
     </div>

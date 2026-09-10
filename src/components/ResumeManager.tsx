@@ -17,10 +17,13 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
   const [menuId, setMenuId] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const [managerPane, setManagerPane] = useState<'resumes' | 'template'>('resumes')
+  const [templateTransitioning, setTemplateTransitioning] = useState(false)
   const [isMobileViewport, setIsMobileViewport] = useState(typeof window !== 'undefined' && window.matchMedia(mobileMediaQuery).matches)
   const renameSessionRef = useRef<{ id: string; cancelled: boolean; committed: boolean } | null>(null)
   const menuTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const deleteTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const previousTemplateIdRef = useRef(templateId)
+  const templateTransitionTimerRef = useRef<number | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
   const mobilePanelRef = useRef<HTMLElement>(null)
@@ -28,6 +31,20 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
   const mobilePreviousFocusRef = useRef<HTMLElement | null>(null)
   const focusableSelector = 'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
   useEffect(() => { if (editingId && !resumes.some((resume) => resume.id === editingId)) setEditingId(null) }, [editingId, resumes])
+  useEffect(() => {
+    const previousTemplateId = previousTemplateIdRef.current
+    previousTemplateIdRef.current = templateId
+    if (previousTemplateId === templateId) return
+    setTemplateTransitioning(true)
+    if (templateTransitionTimerRef.current !== null) window.clearTimeout(templateTransitionTimerRef.current)
+    templateTransitionTimerRef.current = window.setTimeout(() => {
+      templateTransitionTimerRef.current = null
+      setTemplateTransitioning(false)
+    }, 480)
+    return () => {
+      if (templateTransitionTimerRef.current !== null) window.clearTimeout(templateTransitionTimerRef.current)
+    }
+  }, [templateId])
   useEffect(() => {
     const mediaQuery = window.matchMedia(mobileMediaQuery)
     const syncViewport = () => {
@@ -169,7 +186,7 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
       </div>
     })}</div></div>
     </div>
-    <div className="mobile-template-panel" id="manager-template-panel" role="tabpanel" aria-labelledby="manager-template-tab" hidden={managerPane !== 'template'}><div className="mobile-template-heading"><span><p className="eyebrow">模板选择</p><strong>挑选你的版式</strong></span><small>即时应用</small></div><TemplatePicker pickerId="manager-template-picker" value={templateId} onChange={onTemplateChange} /></div>
+    <div className={`mobile-template-panel${templateTransitioning ? ' is-template-switching' : ''}`} id="manager-template-panel" role="tabpanel" aria-labelledby="manager-template-tab" hidden={managerPane !== 'template'}><div className="mobile-template-heading"><span><p className="eyebrow">模板选择</p><strong>挑选你的版式</strong></span><small>{templateTransitioning ? '同步中' : '即时应用'}</small></div>{templateTransitioning && isMobileViewport && managerPane === 'template' && <div className="manager-template-loading" role="status" aria-live="polite"><span className="manager-template-loading-dot" aria-hidden="true" /><span><strong>正在应用模板</strong><small>预览同步中</small></span></div>}<TemplatePicker pickerId="manager-template-picker" value={templateId} onChange={onTemplateChange} /></div>
     <p className="storage-note">内容自动保存至本地浏览器</p>
   </aside>{confirmId && <div className="confirm-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) closeDialog() }}><div className="confirm-dialog" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="delete-title" aria-describedby="delete-description"><div className="confirm-dialog-mark" aria-hidden="true"><Trash2 size={20} strokeWidth={2.2} /></div><p className="eyebrow">不可逆操作 · 请确认</p><h3 id="delete-title">删除这份简历？</h3><p id="delete-description">删除“{resumes.find((resume) => resume.id === confirmId)?.title.trim() || '未命名简历'}”后内容无法恢复，请确认是否继续。</p><div className="dialog-actions"><button className="secondary-button" type="button" ref={cancelRef} onClick={closeDialog}>取消</button><button className="danger-button" type="button" onClick={() => { onDelete(confirmId); onCloseMobile(); closeDialog() }}>确认删除</button></div></div></div>}</>
 }
