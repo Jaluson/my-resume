@@ -109,7 +109,7 @@ export default function App() {
     const timer = window.setTimeout(() => setBackToTopPhase('hidden'), duration)
     return () => window.clearTimeout(timer)
   }, [backToTopPhase])
-  const createResume = () => { const resume = createBlankResume(); updateStore((current) => ({ selectedResumeId: resume.id, resumes: [...current.resumes, resume] })) }
+  const createResume = () => { const resume = createBlankResume(); updateStore((current) => ({ ...current, resumes: [...current.resumes, resume] })) }
   const duplicateResume = (id: string) => {
     const source = storeRef.current.resumes.find((resume) => resume.id === id)
     if (!source) return
@@ -118,6 +118,22 @@ export default function App() {
   }
   const renameResume = (id: string, title: string) => updateStore((current) => ({ ...current, resumes: current.resumes.map((resume) => resume.id === id ? touch({ ...resume, title: title.trim() || '未命名简历' }) : resume) }))
   const deleteResume = (id: string) => updateStore((current) => { const remaining = current.resumes.filter((resume) => resume.id !== id); if (!remaining.length) { const blank = createBlankResume(); return { selectedResumeId: blank.id, resumes: [blank] } } if (current.selectedResumeId !== id) return { ...current, resumes: remaining }; const deletedIndex = current.resumes.findIndex((resume) => resume.id === id); const nextResume = remaining[Math.min(deletedIndex, remaining.length - 1)]; return { selectedResumeId: nextResume.id, resumes: remaining } })
+  const deleteResumes = (ids: string[]) => updateStore((current) => {
+    const deletedIds = new Set(ids)
+    const remaining = current.resumes.filter((resume) => !deletedIds.has(resume.id))
+    if (remaining.length) {
+      const selectedResumeId = deletedIds.has(current.selectedResumeId) ? remaining[0].id : current.selectedResumeId
+      return { selectedResumeId, resumes: remaining }
+    }
+    const blank = createBlankResume()
+    return { selectedResumeId: blank.id, resumes: [blank] }
+  })
+  const reorderResumes = (orderedIds: string[]) => updateStore((current) => {
+    const resumesById = new Map(current.resumes.map((resume) => [resume.id, resume]))
+    const reordered = orderedIds.map((id) => resumesById.get(id)).filter((resume): resume is Resume => Boolean(resume))
+    const missing = current.resumes.filter((resume) => !orderedIds.includes(resume.id))
+    return { ...current, resumes: [...reordered, ...missing] }
+  })
 
   const closeExportSuccess = () => {
     setExportSuccess(null)
@@ -140,7 +156,6 @@ export default function App() {
         if (!element || !bounds || bounds.width <= 0 || bounds.height <= 0) throw new Error('找不到有效的 PDF 预览')
         await exportResumeToPdf(currentResume, element)
       } else await exportResumeToDocx(currentResume)
-      setExportSuccess(format)
     } catch (exportError) {
       setExportSuccess(null)
       exportReturnFocusRef.current = undefined
@@ -156,7 +171,7 @@ export default function App() {
     {exporting && <LoadingIndicator fullScreen label={exporting === 'pdf' ? '正在生成 PDF' : '正在生成 Word'} detail="正在整理版式与内容，请稍候" />}
     <main className="workspace">
       <div className="workspace-main">
-        <ResumeManager resumes={store.resumes} selectedId={currentResume.id} templateId={currentResume.templateId} onSelect={selectResume} onTemplateChange={(templateId) => updateResume({ ...currentResume, templateId })} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} mobileTriggerRef={mobileManagerTriggerRef} />
+        <ResumeManager resumes={store.resumes} selectedId={currentResume.id} templateId={currentResume.templateId} onSelect={selectResume} onTemplateChange={(templateId) => updateResume({ ...currentResume, templateId })} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} onDeleteMany={deleteResumes} onReorder={reorderResumes} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} mobileTriggerRef={mobileManagerTriggerRef} />
         <ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} />
       </div>
     </main>
@@ -165,7 +180,7 @@ export default function App() {
     {exportSuccess && <div className="export-success-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) closeExportSuccess() }}>
       <div className="export-success-modal" role="dialog" aria-modal="true" aria-labelledby="export-success-title" aria-describedby="export-success-hint">
         <div className="modal-orbit" aria-hidden="true"><span className="modal-orbit-ring modal-orbit-ring-one" /><span className="modal-orbit-ring modal-orbit-ring-two" /><span className="modal-orbit-core"><CheckCircle2 size={25} strokeWidth={2.1} /></span></div>
-        <div className="export-modal-heading"><div><p className="eyebrow">文件已生成 · 已就绪</p><h2 id="export-success-title">{exportSuccess === 'pdf' ? 'PDF 已导出' : 'Word 已导出'}</h2></div><button className="icon-button" type="button" onClick={closeExportSuccess} aria-label="关闭导出提示"><X size={18} aria-hidden="true" /></button></div>
+        <div className="export-modal-heading"><div><p className="eyebrow">文件已生成 · 已就绪</p><h2 id="export-success-title">{exportSuccess === 'pdf' ? 'PDF 已导出' : 'Word 已导出'}</h2></div></div>
         <p className="export-modal-hint" id="export-success-hint">文件已下载到浏览器默认下载位置，可以继续编辑当前简历。</p>
         <button className="primary-button export-success-confirm" type="button" onClick={closeExportSuccess}>知道了</button>
       </div>

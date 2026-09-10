@@ -1,4 +1,5 @@
 import type { EducationItem, ExperienceItem, Profile, ProjectItem, Resume, ResumeLayout, ResumeSectionId, ResumeStore } from '../types/resume'
+import { isTemplateId } from '../data/templates'
 
 export const STORAGE_KEY = 'resume-editor:v1'
 export const RECOVERY_KEY = 'resume-editor:recovery'
@@ -82,7 +83,7 @@ const normalizeLayout = (layout: ResumeLayout | undefined): ResumeLayout => {
 const isResume = (value: unknown): value is Resume => {
   if (!value || typeof value !== 'object') return false
   const item = value as Partial<Resume>
-  return isString(item.id) && isString(item.title) && (item.templateId === 'classic' || item.templateId === 'modern' || item.templateId === 'minimal' || item.templateId === 'editorial' || item.templateId === 'executive' || item.templateId === 'compact') && isString(item.updatedAt) && isProfile(item.profile) && isString(item.summary) && Array.isArray(item.experience) && item.experience.every(isExperience) && Array.isArray(item.education) && item.education.every(isEducation) && isStringArray(item.skills) && Array.isArray(item.projects) && item.projects.every(isProject) && isStringArray(item.languages) && (item.layout === undefined || isLayout(item.layout))
+  return isString(item.id) && isString(item.title) && isTemplateId(item.templateId) && isString(item.updatedAt) && isProfile(item.profile) && isString(item.summary) && Array.isArray(item.experience) && item.experience.every(isExperience) && Array.isArray(item.education) && item.education.every(isEducation) && isStringArray(item.skills) && Array.isArray(item.projects) && item.projects.every(isProject) && isStringArray(item.languages) && (item.layout === undefined || isLayout(item.layout))
 }
 const isStoreShape = (value: unknown): value is { selectedResumeId: string; resumes: unknown[] } => {
   if (!value || typeof value !== 'object') return false

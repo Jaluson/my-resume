@@ -1,4 +1,4 @@
-export type TemplateId = 'classic' | 'modern' | 'minimal' | 'editorial' | 'executive' | 'compact'
+export type TemplateId = 'classic' | 'modern' | 'minimal' | 'editorial' | 'executive' | 'compact' | 'academic' | 'creative' | 'tech' | 'clean' | 'bold' | 'friendly' | 'portfolio' | 'finance' | 'healthcare' | 'startup'
 
 export type Profile = {
   fullName: string
