@@ -121,10 +121,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .workspace-main { min-width: 0; display: grid; grid-template-columns: 252px minmax(0, 1fr); align-items: start; gap: clamp(24px, 4vw, 64px); }
 .manager-panel { min-width: 0; min-height: calc(100vh - 122px); display: grid; align-content: start; gap: 21px; padding: 20px 14px 16px; position: sticky; top: 98px; background: linear-gradient(160deg, rgba(255, 255, 255, .9), rgba(248, 250, 255, .78)); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow-sm); backdrop-filter: blur(18px); animation: sidebar-in var(--motion-slow) var(--motion-spring) both; }
 .manager-panel, .editor-column, .preview-column { min-width: 0; }
-.panel-heading, .column-heading, .preview-heading, .template-panel-heading, .layout-controls-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.panel-heading, .column-heading, .template-panel-heading, .layout-controls-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .panel-heading { align-items: flex-start; padding: 0 4px; }
 .panel-heading > div:first-child { min-width: 0; display: grid; gap: 3px; }
-.panel-heading h2, .column-heading h1, .preview-heading h2, .template-panel h3, .layout-controls-heading h2 { margin: 5px 0 0; color: var(--ink); letter-spacing: -.04em; }
+.panel-heading h2, .column-heading h1, .template-panel h3, .layout-controls-heading h2 { margin: 5px 0 0; color: var(--ink); letter-spacing: -.04em; }
 .panel-heading h2 { font-size: 20px; }
 .panel-heading-subtitle { margin: 3px 0 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
 .panel-heading-count { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; color: var(--accent-deep); background: var(--accent-soft); border: 1px solid rgba(79, 91, 213, .12); border-radius: 99px; font-size: 10px; font-weight: 800; white-space: nowrap; }
@@ -222,8 +222,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .workbench-body > .editor-column, .workbench-body > .preview-column { min-width: 0; padding: 22px; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
 .workbench-body > .editor-column { background: rgba(255, 255, 255, .88); }
 .workbench-body > .preview-column { position: sticky; top: 98px; background: linear-gradient(150deg, #f9faff, #eef1f7); }
-.workbench-body > .editor-column > .column-heading, .workbench-body > .preview-column > .preview-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-.column-heading h2, .preview-heading h2 { margin-top: 5px; color: var(--ink); font-size: 18px; letter-spacing: -.04em; }
+.workbench-body > .editor-column > .column-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.column-heading h2 { margin-top: 5px; color: var(--ink); font-size: 18px; letter-spacing: -.04em; }
 
 .editor-sections { display: grid; gap: 10px; }
 .editor-section { overflow: hidden; }
@@ -288,7 +288,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .layout-order .icon-button { width: 27px; height: 27px; flex-basis: 27px; }
 .sr-only { width: 1px; height: 1px; overflow: hidden; position: absolute; padding: 0; margin: -1px; border: 0; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
-.preview-heading { margin-bottom: 17px; }
 .preview-stage { min-height: 720px; display: flex; justify-content: center; overflow: auto; padding: 28px; position: relative; isolation: isolate; background: #e9edf4; border: 1px solid #dbe1eb; border-radius: 14px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 24px rgba(44, 58, 91, .05); }
 .preview-stage::before, .preview-stage::after { content: ''; height: 24px; position: absolute; left: 0; right: 0; z-index: 2; pointer-events: none; }
 .preview-stage::before { top: 0; background: linear-gradient(180deg, rgba(232, 237, 245, .98), rgba(232, 237, 245, 0)); }
@@ -512,8 +511,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workbench-template-panel { display: none; }
   .workbench-body { display: block; }
   .workbench-body > .editor-column, .workbench-body > .preview-column { margin-top: 13px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-  .workbench-body > .editor-column > .column-heading, .workbench-body > .preview-column > .preview-heading { min-height: 46px; display: flex; align-items: center; margin: 0 3px 8px; }
-  .column-heading h2, .preview-heading h2 { margin-top: 3px; font-size: 18px; }
+  .workbench-body > .editor-column > .column-heading { min-height: 46px; display: flex; align-items: center; margin: 0 3px 8px; }
+  .column-heading h2 { margin-top: 3px; font-size: 18px; }
   .pane-status { padding: 6px 8px; color: #5e6b86; background: #e9ecfc; border: 1px solid #dce0fa; border-radius: 99px; }
   .editor-sections { gap: 9px; }
   .editor-section, .layout-controls { border-radius: 14px; box-shadow: 0 5px 16px rgba(37, 50, 81, .055); }
@@ -647,7 +646,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workbench-body > .editor-column { background: rgba(251, 252, 255, .92); }
   .workbench-body > .preview-column { color: #e8edfb; background: linear-gradient(145deg, #2b3856, #1e2a45); border-color: rgba(164, 179, 215, .25); box-shadow: 0 24px 54px rgba(28, 42, 71, .18), inset 0 1px rgba(255, 255, 255, .1); }
   .workbench-body > .preview-column .eyebrow { color: #aeb9d6; }
-  .workbench-body > .preview-column .preview-heading h2 { color: #f7f9ff; }
   .workbench-body > .preview-column .pane-status { color: #d9e1f5; background: rgba(255, 255, 255, .1); border-color: rgba(210, 220, 247, .18); }
   .preview-stage { background: #dfe6f1; border-color: rgba(190, 202, 223, .82); box-shadow: inset 0 1px rgba(255, 255, 255, .76), inset 0 0 28px rgba(39, 56, 91, .1); }
   .preview-stage:hover { box-shadow: inset 0 1px rgba(255, 255, 255, .82), inset 0 0 28px rgba(39, 56, 91, .12), 0 10px 24px rgba(12, 22, 43, .1); }
@@ -660,7 +658,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workbench-body > .editor-column { background: transparent; }
   .workbench-body > .preview-column { color: var(--ink); background: transparent; }
   .workbench-body > .preview-column .eyebrow { color: #8793a8; }
-  .workbench-body > .preview-column .preview-heading h2 { color: var(--ink); }
   .workbench-body > .preview-column .pane-status { color: #5e6b86; background: #e9ecfc; border-color: #dce0fa; }
   .preview-stage { background: #e2e8f2; border-color: #d5deeb; }
   .editor-section, .layout-controls { background: rgba(251, 252, 255, .9); }
@@ -746,7 +743,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   box-shadow: var(--material-shadow-deep), inset 0 1px rgba(255, 255, 255, .11);
 }
 .workbench-body > .preview-column .eyebrow { color: #aeb9d6; }
-.workbench-body > .preview-column .preview-heading h2 { color: #f7f9ff; }
 .workbench-body > .preview-column .pane-status { color: #d9e1f5; background: rgba(255, 255, 255, .1); border-color: rgba(210, 220, 247, .18); }
 .preview-stage {
   background: linear-gradient(145deg, #e8edf5, #dce4ef);
@@ -779,7 +775,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .workbench-body > .editor-column, .workbench-body > .preview-column { border-color: transparent; box-shadow: none; }
   .workbench-body > .preview-column { color: var(--ink); background: transparent; }
   .workbench-body > .preview-column .eyebrow { color: #8793a8; }
-  .workbench-body > .preview-column .preview-heading h2 { color: var(--ink); }
   .workbench-body > .preview-column .pane-status { color: #5e6b86; background: #e9ecfc; border-color: #dce0fa; }
   .preview-stage { background: linear-gradient(145deg, #e8edf5, #dfe6f1); }
   .editor-section, .layout-controls { background: linear-gradient(145deg, rgba(253, 254, 255, .95), rgba(244, 247, 252, .88)); }

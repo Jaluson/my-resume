@@ -266,7 +266,6 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
         <ResumeEditor resume={resume} onChange={onChange} />
       </section>
       <section id="resume-preview-panel" className={`preview-column ${mobilePane === 'preview' ? 'mobile-visible' : 'mobile-hidden'}`} role="tabpanel" aria-labelledby="resume-preview-tab">
-        <div className="preview-heading"><div><p className="eyebrow">实时预览</p></div></div>
         <div className="preview-stage"><ResumePreview resume={resume} onChange={onChange} ref={previewRef} /></div>
       </section>
     </div>

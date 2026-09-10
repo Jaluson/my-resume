@@ -30,13 +30,14 @@ const trimTrailingWhitespace = (canvas: HTMLCanvasElement): HTMLCanvasElement =>
   const context = canvas.getContext('2d')
   if (!context) return canvas
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
+  const inset = Math.min(16, Math.max(2, Math.round(Math.min(canvas.width, canvas.height) * .006)))
   const rowStride = canvas.width * 4
   let bottom = canvas.height
-  while (bottom > 0) {
-    const rowStart = (bottom - 1) * rowStride
+  while (bottom > inset) {
+    const rowStart = (bottom - 1) * rowStride + inset * 4
     let hasInk = false
-    for (let index = rowStart; index < rowStart + rowStride; index += 4) {
-      if (pixels[index] < 250 || pixels[index + 1] < 250 || pixels[index + 2] < 250 || pixels[index + 3] < 250) {
+    for (let index = rowStart; index < (bottom - 1) * rowStride + (canvas.width - inset) * 4; index += 4) {
+      if (pixels[index + 3] > 0 && (pixels[index] < 245 || pixels[index + 1] < 245 || pixels[index + 2] < 245)) {
         hasInk = true
         break
       }
@@ -44,7 +45,7 @@ const trimTrailingWhitespace = (canvas: HTMLCanvasElement): HTMLCanvasElement =>
     if (hasInk) break
     bottom -= 1
   }
-  if (bottom === 0 || bottom === canvas.height) return canvas
+  if (bottom <= inset || bottom === canvas.height) return canvas
   const trimmed = document.createElement('canvas')
   trimmed.width = canvas.width
   trimmed.height = bottom
@@ -55,8 +56,12 @@ const hasVisibleInk = (canvas: HTMLCanvasElement): boolean => {
   const context = canvas.getContext('2d')
   if (!context) return true
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
-  for (let index = 0; index < pixels.length; index += 4) {
-    if (pixels[index] < 245 || pixels[index + 1] < 245 || pixels[index + 2] < 245 || pixels[index + 3] < 245) return true
+  const inset = Math.min(16, Math.max(2, Math.round(Math.min(canvas.width, canvas.height) * .006)))
+  for (let row = inset; row < canvas.height - inset; row += 1) {
+    const rowStart = (row * canvas.width + inset) * 4
+    for (let index = rowStart; index < (row * canvas.width + canvas.width - inset) * 4; index += 4) {
+      if (pixels[index + 3] > 0 && (pixels[index] < 245 || pixels[index + 1] < 245 || pixels[index + 2] < 245)) return true
+    }
   }
   return false
 }
