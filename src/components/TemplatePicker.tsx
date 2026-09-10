@@ -1,29 +1,18 @@
-import { useState } from 'react'
-import { Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { TemplateId } from '../types/resume'
 import { templates } from '../data/templates'
 
-type TemplatePickerProps = { value: TemplateId; onChange: (value: TemplateId) => void }
+type TemplatePickerProps = { pickerId: string; value: TemplateId; onChange: (value: TemplateId) => void }
 
-export default function TemplatePicker({ value, onChange }: TemplatePickerProps) {
-  const selectedTemplate = templates.find((template) => template.id === value) ?? templates[0]
-  const [mobileOpen, setMobileOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches)
-
+export default function TemplatePicker({ pickerId, value, onChange }: TemplatePickerProps) {
   return (
-    <fieldset className={`template-picker-group ${mobileOpen ? 'is-open' : 'is-collapsed'}`}>
+    <fieldset className="template-picker-group">
       <legend>选择简历模板</legend>
-      <button className="template-mobile-toggle" type="button" onClick={() => setMobileOpen(!mobileOpen)} aria-expanded={mobileOpen} aria-controls="template-picker-content">
-        <span><small>当前模板</small><strong>{selectedTemplate.name}</strong></span>
-        {mobileOpen ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
-      </button>
-      <div className="template-picker-content" id="template-picker-content">
-        <p className="template-picker-status" role="status" aria-live="polite">
-          当前模板：<strong>{selectedTemplate.name}</strong>
-        </p>
+      <div className="template-picker-content" id={`${pickerId}-content`}>
         <div className="template-picker">
           {templates.map((template) => {
             const isSelected = value === template.id
-            const descriptionId = `template-description-${template.id}`
+            const descriptionId = `${pickerId}-description-${template.id}`
 
             return (
               <button

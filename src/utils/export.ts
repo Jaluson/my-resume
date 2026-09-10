@@ -191,7 +191,7 @@ export async function exportResumeToDocx(resume: Resume): Promise<void> {
         const details = [formatResumePeriod(item.startDate, item.endDate, item.current), inlineText(item.location)].filter(Boolean).join('  |  ')
         if (itemTitle) paragraphs.push(new Paragraph({ style: 'ResumeEntryTitle', alignment: paragraphAlignment, keepNext: Boolean(details || item.visibleBullets.length), children: [new TextRun({ text: itemTitle, font: resumeFont, bold: true })] }))
         if (details) paragraphs.push(new Paragraph({ style: 'ResumeMeta', alignment: paragraphAlignment, keepNext: item.visibleBullets.length > 0, children: [new TextRun({ text: details, font: resumeFont })] }))
-        paragraphs.push(...item.visibleBullets.map(bulletParagraph))
+        paragraphs.push(...item.visibleBullets.map(({ value }) => bulletParagraph(value)))
         return paragraphs
       }),
     },
@@ -206,7 +206,7 @@ export async function exportResumeToDocx(resume: Resume): Promise<void> {
         return paragraphs
       }),
     },
-    skills: { fallback: '技能', build: () => bodyParagraphs(content.skills.map(inlineText).filter(Boolean).join('  ·  ')) },
+    skills: { fallback: '技能', build: () => bodyParagraphs(content.skills.map(({ value }) => value).filter(Boolean).join('  ·  ')) },
     projects: {
       fallback: '项目经历',
       build: () => content.projects.flatMap((item) => {
@@ -220,11 +220,11 @@ export async function exportResumeToDocx(resume: Resume): Promise<void> {
           children: [ ...(itemName ? [new TextRun({ text: itemName, font: resumeFont, bold: true })] : []), ...(itemName && itemUrl ? [new TextRun({ text: '  ·  ', font: resumeFont })] : []), ...(itemUrl ? [linkOrText(itemUrl)] : []) ],
         }))
         paragraphs.push(...(item.description.trim() ? bodyParagraphs(item.description) : []))
-        paragraphs.push(...item.visibleBullets.map(bulletParagraph))
+        paragraphs.push(...item.visibleBullets.map(({ value }) => bulletParagraph(value)))
         return paragraphs
       }),
     },
-    languages: { fallback: '语言', build: () => bodyParagraphs(content.languages.map(inlineText).filter(Boolean).join('  ·  ')) },
+    languages: { fallback: '语言', build: () => bodyParagraphs(content.languages.map(({ value }) => value).filter(Boolean).join('  ·  ')) },
   }
   const seenSections = new Set<ResumeSectionId>()
   const sectionOrder = [...resume.layout.sectionOrder, ...(Object.keys(sectionBuilders) as ResumeSectionId[])]

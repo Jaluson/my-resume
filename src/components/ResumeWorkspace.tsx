@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState, type Ref } from 'react'
-import { ArrowUp, Eye, PencilLine } from 'lucide-react'
+import { useEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react'
+import { Eye, PencilLine } from 'lucide-react'
 import type { Resume } from '../types/resume'
 import ResumeEditor from './ResumeEditor'
 import TemplatePicker from './TemplatePicker'
@@ -22,10 +22,13 @@ type DragSession = {
   currentLeft: number
   currentTop: number
   moved: boolean
+  isFloating: boolean
+  targetPane: MobilePane | null
 }
 type ViewportBounds = { minLeft: number; maxLeft: number; minTop: number; maxTop: number }
 
 const DRAG_THRESHOLD = 4
+const SWIPE_THRESHOLD = 10
 const VIEWPORT_EDGE_GAP = 8
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
@@ -61,11 +64,28 @@ const snapToNearestEdge = (position: DragPosition, element: HTMLElement): DragPo
 
 export default function ResumeWorkspace({ resume, onChange, previewRef }: ResumeWorkspaceProps) {
   const [mobilePane, setMobilePane] = useState<MobilePane>('editor')
-  const [switcherExpanded, setSwitcherExpanded] = useState(false)
   const [dragPosition, setDragPosition] = useState<DragPosition | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [resumeTransitioning, setResumeTransitioning] = useState(false)
+  const [switcherPulse, setSwitcherPulse] = useState(false)
+  const previousPaneRef = useRef<MobilePane>(mobilePane)
   const workbenchRef = useRef<HTMLElement>(null)
   const switcherRef = useRef<HTMLDivElement>(null)
+  const previousResumeIdRef = useRef(resume.id)
+  useEffect(() => {
+    if (previousResumeIdRef.current === resume.id) return
+    previousResumeIdRef.current = resume.id
+    setResumeTransitioning(true)
+    const timer = window.setTimeout(() => setResumeTransitioning(false), 340)
+    return () => window.clearTimeout(timer)
+  }, [resume.id])
+  useEffect(() => {
+    if (previousPaneRef.current === mobilePane) return
+    previousPaneRef.current = mobilePane
+    setSwitcherPulse(true)
+    const timer = window.setTimeout(() => setSwitcherPulse(false), 760)
+    return () => window.clearTimeout(timer)
+  }, [mobilePane])
   const dragSessionRef = useRef<DragSession | null>(null)
   const dragPositionRef = useRef<DragPosition | null>(null)
   const suppressClickRef = useRef(false)
@@ -77,12 +97,14 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
     dragSessionRef.current = null
     setDragging(false)
     if (session.moved) {
-      const snappedPosition = snapToNearestEdge({
-        left: session.currentLeft,
-        top: session.currentTop,
-      }, switcher)
-      dragPositionRef.current = snappedPosition
-      setDragPosition(snappedPosition)
+      if (session.isFloating) {
+        const snappedPosition = snapToNearestEdge({
+          left: session.currentLeft,
+          top: session.currentTop,
+        }, switcher)
+        dragPositionRef.current = snappedPosition
+        setDragPosition(snappedPosition)
+      }
       suppressClickRef.current = true
       window.setTimeout(() => { suppressClickRef.current = false }, 0)
     }
@@ -93,7 +115,7 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
     if (!switcher) return
     const onPointerDown = (event: PointerEvent) => {
       if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return
-      if (getComputedStyle(switcher).position !== 'fixed' || dragSessionRef.current) return
+      if (dragSessionRef.current) return
       const rect = switcher.getBoundingClientRect()
       dragSessionRef.current = {
         pointerId: event.pointerId,
@@ -104,6 +126,8 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
         currentLeft: rect.left,
         currentTop: rect.top,
         moved: false,
+        isFloating: getComputedStyle(switcher).position === 'fixed',
+        targetPane: null,
       }
     }
     const onPointerMove = (event: PointerEvent) => {
@@ -111,7 +135,9 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
       if (!session || session.pointerId !== event.pointerId) return
       const deltaX = event.clientX - session.startX
       const deltaY = event.clientY - session.startY
-      if (!session.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) return
+      const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY)
+      const threshold = session.isFloating ? DRAG_THRESHOLD : SWIPE_THRESHOLD
+      if (!session.moved && (!isHorizontalSwipe || Math.hypot(deltaX, deltaY) < threshold)) return
       if (!session.moved) {
         session.moved = true
         setDragging(true)
@@ -122,6 +148,14 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
         }
       }
       event.preventDefault()
+      if (!session.isFloating) {
+        const nextPane: MobilePane = deltaX < 0 ? 'preview' : 'editor'
+        if (session.targetPane !== nextPane) {
+          session.targetPane = nextPane
+          switchMobilePane(nextPane)
+        }
+        return
+      }
       const position = constrainPosition({
         left: session.originLeft + deltaX,
         top: session.originTop + deltaY,
@@ -149,47 +183,24 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
   const switchMobilePane = (nextPane: MobilePane) => {
     setMobilePane(nextPane)
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1100px)').matches) {
-      window.requestAnimationFrame(() => workbenchRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      window.requestAnimationFrame(() => workbenchRef.current?.scrollIntoView({ behavior, block: 'start' }))
     }
   }
-  const handlePaneSelect = (nextPane: MobilePane) => {
-    setSwitcherExpanded(true)
+  const handlePaneKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const nextPane = event.key === 'Home' ? 'editor' : event.key === 'End' ? 'preview' : event.key === 'ArrowLeft' ? 'editor' : 'preview'
     switchMobilePane(nextPane)
+    document.getElementById(`resume-${nextPane}-tab`)?.focus()
   }
   const selectPane = (nextPane: MobilePane) => {
     if (suppressClickRef.current) {
       suppressClickRef.current = false
       return
     }
-    handlePaneSelect(nextPane)
+    switchMobilePane(nextPane)
   }
-  useLayoutEffect(() => {
-    const switcher = switcherRef.current
-    if (!switcher) return
-    let frameId: number | null = null
-    const reclamp = () => {
-      if (frameId !== null) window.cancelAnimationFrame(frameId)
-      frameId = window.requestAnimationFrame(() => {
-        frameId = null
-        const element = switcherRef.current
-        const position = dragPositionRef.current
-        if (!element || !position) return
-        const constrained = constrainPosition(position, element)
-        if (constrained.left === position.left && constrained.top === position.top) return
-        dragPositionRef.current = constrained
-        setDragPosition(constrained)
-      })
-    }
-    const onTransitionEnd = (event: TransitionEvent) => {
-      if (event.target === switcher && event.propertyName === 'width') reclamp()
-    }
-    switcher.addEventListener('transitionend', onTransitionEnd)
-    reclamp()
-    return () => {
-      switcher.removeEventListener('transitionend', onTransitionEnd)
-      if (frameId !== null) window.cancelAnimationFrame(frameId)
-    }
-  }, [switcherExpanded])
   useEffect(() => {
     let frameId: number | null = null
     const reclamp = () => {
@@ -214,49 +225,35 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
       if (frameId !== null) window.cancelAnimationFrame(frameId)
     }
   }, [])
-  useEffect(() => {
-    if (!switcherExpanded) return
-    const collapseOnPointer = (event: PointerEvent) => {
-      if (!(event.target instanceof Node) || !switcherRef.current?.contains(event.target)) setSwitcherExpanded(false)
-    }
-    const collapseOnKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSwitcherExpanded(false)
-    }
-    document.addEventListener('pointerdown', collapseOnPointer)
-    document.addEventListener('keydown', collapseOnKey)
-    return () => {
-      document.removeEventListener('pointerdown', collapseOnPointer)
-      document.removeEventListener('keydown', collapseOnKey)
-    }
-  }, [switcherExpanded])
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
-  return <section ref={workbenchRef} className="resume-workbench">
+  return <section ref={workbenchRef} className={`resume-workbench${resumeTransitioning ? ' is-resume-changing' : ''}`}>
     <div
       ref={switcherRef}
-      className={`mobile-switcher${switcherExpanded ? ' is-expanded' : ''}${dragging ? ' is-dragging' : ''}`}
-      style={dragPosition ? { left: dragPosition.left, top: dragPosition.top, right: 'auto' } : undefined}
+      className={`mobile-switcher${dragging ? ' is-dragging' : ''}${switcherPulse ? ' is-switched' : ''}`}
+      role="tablist"
+      aria-orientation="horizontal"
+      aria-label="切换工作区"
+      style={dragPosition ? { left: dragPosition.left, top: dragPosition.top, right: 'auto', bottom: 'auto', transform: 'none' } : undefined}
     >
-      <button id="resume-editor-tab" className={mobilePane === 'editor' ? 'is-active' : ''} type="button" role="tab" aria-label="编辑" title="编辑" aria-selected={mobilePane === 'editor'} aria-controls="resume-editor-panel" onClick={() => selectPane('editor')}><PencilLine size={15} aria-hidden="true" /><span className="mobile-switcher-label">编辑</span></button>
-      <button id="resume-preview-tab" className={mobilePane === 'preview' ? 'is-active' : ''} type="button" role="tab" aria-label="预览" title="预览" aria-selected={mobilePane === 'preview'} aria-controls="resume-preview-panel" onClick={() => selectPane('preview')}><Eye size={15} aria-hidden="true" /><span className="mobile-switcher-label">预览</span></button>
-    </div>
-    <div className="workbench-heading">
-      <div className="workbench-title"><p className="eyebrow">统一工作台</p><h1>{resume.title || '未命名简历'}</h1></div>
-      <div className="workbench-heading-side">
-        <span className="hint-text workbench-hint">编辑内容与实时预览统一同步</span>
-      </div>
+      <span className={`mobile-switcher-thumb is-${mobilePane}`} aria-hidden="true" />
+      <button id="resume-editor-tab" className={mobilePane === 'editor' ? 'is-active' : ''} type="button" role="tab" aria-label="编辑" title="编辑" aria-selected={mobilePane === 'editor'} aria-controls="resume-editor-panel" tabIndex={mobilePane === 'editor' ? 0 : -1} onClick={() => selectPane('editor')} onKeyDown={handlePaneKeyDown}><PencilLine size={15} aria-hidden="true" /><span className="mobile-switcher-label">编辑内容</span></button>
+      <button id="resume-preview-tab" className={mobilePane === 'preview' ? 'is-active' : ''} type="button" role="tab" aria-label="预览" title="预览" aria-selected={mobilePane === 'preview'} aria-controls="resume-preview-panel" tabIndex={mobilePane === 'preview' ? 0 : -1} onClick={() => selectPane('preview')} onKeyDown={handlePaneKeyDown}><Eye size={15} aria-hidden="true" /><span className="mobile-switcher-label">实时预览</span></button>
     </div>
     <div className="workbench-template-panel">
       <div className="template-panel">
-        <div className="template-panel-heading"><div><p className="eyebrow">版式风格</p><h3>选择模板</h3></div><span>即时应用</span></div>
-        <TemplatePicker value={resume.templateId} onChange={(templateId) => onChange({ ...resume, templateId })} />
+        <div className="template-panel-heading"><div><p className="eyebrow">模板选择</p><h3>挑选你的版式</h3></div><span>即时应用</span></div>
+        <TemplatePicker pickerId="workspace-template-picker" value={resume.templateId} onChange={(templateId) => onChange({ ...resume, templateId })} />
         <p className="hint-text">Word 导出保留内容与强调色，不复制现代模板的侧栏结构；需要视觉版式时请导出 PDF。</p>
       </div>
     </div>
     <div className="workbench-body">
-      <section id="resume-editor-panel" className={`editor-column ${mobilePane === 'editor' ? 'mobile-visible' : 'mobile-hidden'}`} role="tabpanel" aria-labelledby="resume-editor-tab"><ResumeEditor resume={resume} onChange={onChange} /></section>
-      <section id="resume-preview-panel" className={`preview-column ${mobilePane === 'preview' ? 'mobile-visible' : 'mobile-hidden'}`} role="tabpanel" aria-labelledby="resume-preview-tab"><div className="preview-stage"><ResumePreview resume={resume} onChange={onChange} ref={previewRef} /></div></section>
+      <section id="resume-editor-panel" className={`editor-column ${mobilePane === 'editor' ? 'mobile-visible' : 'mobile-hidden'}`} role="tabpanel" aria-labelledby="resume-editor-tab">
+        <ResumeEditor resume={resume} onChange={onChange} />
+      </section>
+      <section id="resume-preview-panel" className={`preview-column ${mobilePane === 'preview' ? 'mobile-visible' : 'mobile-hidden'}`} role="tabpanel" aria-labelledby="resume-preview-tab">
+        <div className="preview-heading"><div><p className="eyebrow">实时预览</p><h2>你的简历成稿</h2></div><span className="pane-status"><Eye size={14} aria-hidden="true" />A4 画布</span></div>
+        <div className="preview-stage"><ResumePreview resume={resume} onChange={onChange} ref={previewRef} /></div>
+      </section>
     </div>
-    <button className="back-to-top-pin" type="button" onClick={scrollToTop} aria-label="返回顶部" title="返回顶部"><ArrowUp size={17} aria-hidden="true" /><span className="sr-only">返回顶部</span></button>
   </section>
 }

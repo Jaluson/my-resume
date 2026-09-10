@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FileDown } from 'lucide-react'
+import type { CSSProperties } from 'react'
 
 type LoadingIndicatorProps = {
   label?: string
@@ -15,18 +16,27 @@ const loadingStages = [
 
 export default function LoadingIndicator({ label = '正在处理', detail, fullScreen = false }: LoadingIndicatorProps) {
   const [stageIndex, setStageIndex] = useState(0)
+  const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!fullScreen || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const timer = window.setInterval(() => setStageIndex((current) => (current + 1) % loadingStages.length), 1500)
+    if (!fullScreen) {
+      setStageIndex(0)
+      return
+    }
+    overlayRef.current?.focus()
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const timer = window.setInterval(() => setStageIndex((current) => Math.min(current + 1, loadingStages.length - 1)), 1500)
     return () => window.clearInterval(timer)
   }, [fullScreen])
 
   const stage = loadingStages[stageIndex]
   const visual = <span className="loading-symbol" aria-hidden="true">
+    <span className="loading-orbit loading-orbit-one" />
+    <span className="loading-orbit loading-orbit-two" />
     <span className="loading-symbol-glow" />
     <span className="loading-sheet loading-sheet-back"><i /><i /><i /></span>
     <span className="loading-sheet loading-sheet-front"><i /><i /><i /><FileDown className="loading-sheet-icon" strokeWidth={2.2} /></span>
+    <span className="loading-beam" />
     <span className="loading-spark loading-spark-one" />
     <span className="loading-spark loading-spark-two" />
     <span className="loading-spark loading-spark-three" />
@@ -38,15 +48,16 @@ export default function LoadingIndicator({ label = '正在处理', detail, fullS
 
   if (!fullScreen) return <span className="loading-indicator loading-indicator-inline" role="status" aria-label={label}>{visual}{copy}</span>
 
-  return <div className="loading-overlay" role="status" aria-live="polite" aria-busy="true" aria-label={`${label}，${stage.label}`}>
+  const progressStyle = { '--loading-progress': `${((stageIndex + 1) / loadingStages.length) * 100}%` } as CSSProperties
+  return <div ref={overlayRef} className="loading-overlay" role="dialog" aria-modal="true" aria-live="polite" aria-busy="true" aria-label={`${label}，${stage.label}`} tabIndex={-1} onKeyDown={(event) => { if (event.key === 'Tab') event.preventDefault() }}>
     <div className="loading-card">
-      <div className="loading-card-topline"><span className="loading-kicker">简历工坊 · 正在准备</span><span className="loading-live"><i /> LIVE</span></div>
+      <div className="loading-card-topline"><span className="loading-kicker">简历工坊 · 正在准备</span><span className="loading-stage-count">{String(stageIndex + 1).padStart(2, '0')} / {String(loadingStages.length).padStart(2, '0')}</span><span className="loading-live"><i />进行中</span></div>
       <div className="loading-card-visual">{visual}</div>
       {copy}
       <div className="loading-steps" aria-hidden="true">
         {loadingStages.map((item, index) => <span className={`loading-step ${index < stageIndex ? 'is-complete' : ''} ${index === stageIndex ? 'is-current' : ''}`} key={item.label}><i />{item.label}</span>)}
       </div>
-      <span className="loading-progress" aria-hidden="true"><span /></span>
+      <span className="loading-progress" aria-hidden="true" style={progressStyle}><span /></span>
       <span className="loading-stage-copy" aria-hidden="true">{stage.detail}</span>
     </div>
   </div>

@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FileText, Save, X } from 'lucide-react'
+import { CheckCircle2, FileText, Save, X } from 'lucide-react'
 import ResumeManager from './components/ResumeManager'
 import ResumePreview from './components/ResumePreview'
 import ResumeWorkspace from './components/ResumeWorkspace'
-import ExportMenu from './components/ExportMenu'
+import ExportMenu, { type ExportFormat } from './components/ExportMenu'
 import { clearRecovery, createBlankResume, loadResumeStore, makeId, saveResumeStore } from './store/resumeStore'
 import { exportResumeToDocx, exportResumeToPdf } from './utils/export'
 import LoadingIndicator from './components/LoadingIndicator'
 import type { Resume, ResumeStore } from './types/resume'
 import type { ResumeStoreLoad } from './store/resumeStore'
 
-type SaveState = 'saved' | 'saving' | 'error'
+type SaveState = 'unsaved' | 'saved' | 'saving' | 'error'
 const touch = (resume: Resume): Resume => ({ ...resume, updatedAt: new Date().toISOString() })
 
 function BrandMark() {
@@ -36,9 +36,10 @@ function BrandMark() {
 export default function App() {
   const [loaded] = useState<ResumeStoreLoad>(() => loadResumeStore())
   const [store, setStore] = useState<ResumeStore>(loaded.store)
-  const [saveState, setSaveState] = useState<SaveState>('saved')
+  const [saveState, setSaveState] = useState<SaveState>(() => loaded.status === 'stored' ? 'saved' : loaded.status === 'migrated' ? 'saving' : 'unsaved')
   const [saveError, setSaveError] = useState(false)
-  const [exporting, setExporting] = useState<'pdf' | 'docx' | null>(null)
+  const [exporting, setExporting] = useState<ExportFormat | null>(null)
+  const [exportSuccess, setExportSuccess] = useState<ExportFormat | null>(null)
   const [error, setError] = useState('')
   const [loadWarning, setLoadWarning] = useState(loaded.warning ?? '')
   const [mobileManagerOpen, setMobileManagerOpen] = useState(false)
@@ -46,6 +47,7 @@ export default function App() {
   const previewRef = useRef<HTMLDivElement>(null)
   const exportRef = useRef<HTMLDivElement>(null)
   const mobileManagerTriggerRef = useRef<HTMLButtonElement>(null)
+  const exportReturnFocusRef = useRef<(() => void) | undefined>(undefined)
   const storeRef = useRef(store)
   storeRef.current = store
   const currentResume = useMemo(() => store.resumes.find((resume) => resume.id === store.selectedResumeId) ?? store.resumes[0], [store])
@@ -69,6 +71,28 @@ export default function App() {
     window.addEventListener('pagehide', flush)
     return () => window.removeEventListener('pagehide', flush)
   }, [dirty, loaded.status])
+  useEffect(() => {
+    if (!exportSuccess) return
+    const dialog = document.querySelector<HTMLElement>('.export-success-modal')
+    const controls = () => Array.from(dialog?.querySelectorAll<HTMLButtonElement>('button:not([disabled])') ?? [])
+    const focusFirst = () => controls()[0]?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeExportSuccess()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const items = controls()
+      if (!items.length) return
+      const index = items.indexOf(document.activeElement as HTMLButtonElement)
+      event.preventDefault()
+      items[(index + (event.shiftKey ? -1 : 1) + items.length) % items.length].focus()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    window.requestAnimationFrame(focusFirst)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [exportSuccess])
 
   const updateStore = (updater: (current: ResumeStore) => ResumeStore) => { setSaveState('saving'); setSaveError(false); setDirty(true); setStore(updater) }
   const updateResume = (nextResume: Resume) => updateStore((current) => ({ ...current, resumes: current.resumes.map((resume) => resume.id === nextResume.id ? touch(nextResume) : resume) }))
@@ -83,11 +107,20 @@ export default function App() {
   const renameResume = (id: string, title: string) => updateStore((current) => ({ ...current, resumes: current.resumes.map((resume) => resume.id === id ? touch({ ...resume, title: title.trim() || '未命名简历' }) : resume) }))
   const deleteResume = (id: string) => updateStore((current) => { const remaining = current.resumes.filter((resume) => resume.id !== id); if (!remaining.length) { const blank = createBlankResume(); return { selectedResumeId: blank.id, resumes: [blank] } } if (current.selectedResumeId !== id) return { ...current, resumes: remaining }; const deletedIndex = current.resumes.findIndex((resume) => resume.id === id); const nextResume = remaining[Math.min(deletedIndex, remaining.length - 1)]; return { selectedResumeId: nextResume.id, resumes: remaining } })
 
-  const runExport = async (format: 'pdf' | 'docx') => {
+  const closeExportSuccess = () => {
+    setExportSuccess(null)
+    window.requestAnimationFrame(() => {
+      exportReturnFocusRef.current?.()
+      exportReturnFocusRef.current = undefined
+    })
+  }
+
+  const runExport = async (format: ExportFormat, returnFocus?: () => void) => {
     if (!currentResume) return
-    const trigger = document.activeElement instanceof HTMLButtonElement ? document.activeElement : null
-    const startedAt = performance.now()
-    setExporting(format); setError('')
+    exportReturnFocusRef.current = returnFocus
+    setExporting(format)
+    setExportSuccess(null)
+    setError('')
     try {
       if (format === 'pdf') {
         const element = exportRef.current
@@ -95,21 +128,36 @@ export default function App() {
         if (!element || !bounds || bounds.width <= 0 || bounds.height <= 0) throw new Error('找不到有效的 PDF 预览')
         await exportResumeToPdf(currentResume, element)
       } else await exportResumeToDocx(currentResume)
-    } catch (exportError) { setError(exportError instanceof Error ? exportError.message : '导出失败，请稍后重试') } finally {
-      const remaining = Math.max(0, 650 - (performance.now() - startedAt))
-      await new Promise<void>((resolve) => window.setTimeout(resolve, remaining))
+      setExportSuccess(format)
+    } catch (exportError) {
+      setExportSuccess(null)
+      exportReturnFocusRef.current = undefined
+      setError(exportError instanceof Error ? exportError.message : '导出失败，请稍后重试')
+    } finally {
       setExporting(null)
-      window.setTimeout(() => trigger?.focus(), 0)
     }
   }
 
   if (!currentResume) return null
   return <div className={`app-shell${exporting ? ' is-exporting' : ''}`}>
-    <header className="topbar"><div className="brand"><span className="brand-mark"><BrandMark /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite">{saveState === 'saving' ? <LoadingIndicator label="保存中" /> : <><Save size={14} />{saveState === 'error' ? '保存失败' : '已保存'}</>}</span><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark"><BrandMark /></span><div className="brand-copy"><span>简历工坊</span><small>把经历，整理成机会</small></div></div><div className="topbar-actions"><span className={`save-status ${saveState}`} role="status" aria-live="polite">{saveState === 'saving' ? <LoadingIndicator label="保存中" /> : <><Save size={14} aria-hidden="true" />{saveState === 'error' ? '保存失败' : saveState === 'unsaved' ? '未保存' : '已保存'}</>}</span><button ref={mobileManagerTriggerRef} className="manager-toggle secondary-button" type="button" onClick={() => setMobileManagerOpen(true)} aria-label="管理简历" aria-expanded={mobileManagerOpen} aria-controls="resume-manager-panel"><FileText size={16} aria-hidden="true" /><span className="manager-button-label">管理简历</span></button><ExportMenu exporting={exporting} onExport={runExport} /></div></header>
     {exporting && <LoadingIndicator fullScreen label={exporting === 'pdf' ? '正在生成 PDF' : '正在生成 Word'} detail="正在整理版式与内容，请稍候" />}
-    <main className="workspace"><div className="workspace-main"><ResumeManager resumes={store.resumes} selectedId={currentResume.id} onSelect={selectResume} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} mobileTriggerRef={mobileManagerTriggerRef} /><ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} /></div></main>
+    <main className="workspace">
+      <div className="workspace-main">
+        <ResumeManager resumes={store.resumes} selectedId={currentResume.id} templateId={currentResume.templateId} onSelect={selectResume} onTemplateChange={(templateId) => updateResume({ ...currentResume, templateId })} onCreate={createResume} onDuplicate={duplicateResume} onRename={renameResume} onDelete={deleteResume} mobileOpen={mobileManagerOpen} onCloseMobile={() => setMobileManagerOpen(false)} mobileTriggerRef={mobileManagerTriggerRef} />
+        <ResumeWorkspace resume={currentResume} onChange={updateResume} previewRef={previewRef} />
+      </div>
+    </main>
     <div className="export-capture" aria-hidden="true"><ResumePreview resume={currentResume} interactive={false} ref={exportRef} /></div>
-    {loadWarning && <div className="notice" role="alert"><span>{loadWarning}</span><button className="icon-button" type="button" onClick={() => { clearRecovery(); setLoadWarning('') }} aria-label="关闭恢复提示"><X size={17} /></button></div>}
+    {exportSuccess && <div className="export-success-backdrop" role="presentation" onPointerDown={(event) => { if (event.target === event.currentTarget) closeExportSuccess() }}>
+      <div className="export-success-modal" role="dialog" aria-modal="true" aria-labelledby="export-success-title" aria-describedby="export-success-hint">
+        <div className="modal-orbit" aria-hidden="true"><span className="modal-orbit-ring modal-orbit-ring-one" /><span className="modal-orbit-ring modal-orbit-ring-two" /><span className="modal-orbit-core"><CheckCircle2 size={25} strokeWidth={2.1} /></span></div>
+        <div className="export-modal-heading"><div><p className="eyebrow">文件已生成 · 已就绪</p><h2 id="export-success-title">{exportSuccess === 'pdf' ? 'PDF 已导出' : 'Word 已导出'}</h2></div><button className="icon-button" type="button" onClick={closeExportSuccess} aria-label="关闭导出提示"><X size={18} aria-hidden="true" /></button></div>
+        <p className="export-modal-hint" id="export-success-hint">文件已下载到浏览器默认下载位置，可以继续编辑当前简历。</p>
+        <button className="primary-button export-success-confirm" type="button" onClick={closeExportSuccess}>知道了</button>
+      </div>
+    </div>}
+    {loadWarning && <div className="notice" role="alert"><span>{loadWarning}</span><button className="icon-button" type="button" onClick={() => { clearRecovery(); setLoadWarning('') }} aria-label="关闭并删除恢复备份"><X size={17} aria-hidden="true" /></button></div>}
     {saveError && <div className="toast save-error-toast" role="alert"><span>保存失败，建议立即导出。</span><button className="secondary-button" type="button" onClick={persist}>重试保存</button><button className="primary-button" type="button" onClick={() => runExport('pdf')}>导出 PDF</button><button className="icon-button" type="button" onClick={() => setSaveError(false)} aria-label="关闭保存提示"><X size={17} /></button></div>}
     {error && <div className="toast error-toast" role="alert"><span>{error}</span><button className="icon-button" type="button" onClick={() => setError('')} aria-label="关闭错误提示"><X size={17} /></button></div>}
   </div>

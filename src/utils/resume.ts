@@ -1,25 +1,26 @@
 import type { EducationItem, ExperienceItem, ProjectItem, Resume } from '../types/resume'
 
-export type ProjectedExperience = ExperienceItem & { visibleBullets: string[] }
-export type ProjectedProject = ProjectItem & { visibleBullets: string[] }
+export type ProjectedText = { value: string; sourceIndex: number }
+export type ProjectedExperience = ExperienceItem & { visibleBullets: ProjectedText[] }
+export type ProjectedProject = ProjectItem & { visibleBullets: ProjectedText[] }
 export type ResumeContent = {
   profile: Resume['profile']
   summary: string
   experience: ProjectedExperience[]
   education: EducationItem[]
-  skills: string[]
+  skills: ProjectedText[]
   projects: ProjectedProject[]
-  languages: string[]
+  languages: ProjectedText[]
 }
 
 const hasText = (value: string) => value.trim().length > 0
-const visibleBullets = (bullets: string[]) => bullets.filter(hasText)
+const projectText = (values: string[]) => values.map((value, sourceIndex) => ({ value, sourceIndex })).filter((item) => hasText(item.value))
 
 export function getResumeContent(resume: Resume): ResumeContent {
-  const experience = resume.experience.map((item) => ({ ...item, visibleBullets: visibleBullets(item.bullets) })).filter((item) => [item.company, item.role, item.location, formatResumePeriod(item.startDate, item.endDate, item.current)].some(hasText) || item.visibleBullets.length > 0)
+  const experience = resume.experience.map((item) => ({ ...item, visibleBullets: projectText(item.bullets) })).filter((item) => [item.company, item.role, item.location, formatResumePeriod(item.startDate, item.endDate, item.current)].some(hasText) || item.visibleBullets.length > 0)
   const education = resume.education.filter((item) => [item.school, item.degree, item.field, formatResumePeriod(item.startDate, item.endDate, false)].some(hasText))
-  const projects = resume.projects.map((item) => ({ ...item, visibleBullets: visibleBullets(item.bullets) })).filter((item) => [item.name, item.description, item.url].some(hasText) || item.visibleBullets.length > 0)
-  return { profile: resume.profile, summary: resume.summary, experience, education, skills: resume.skills.filter(hasText), projects, languages: resume.languages.filter(hasText) }
+  const projects = resume.projects.map((item) => ({ ...item, visibleBullets: projectText(item.bullets) })).filter((item) => [item.name, item.description, item.url].some(hasText) || item.visibleBullets.length > 0)
+  return { profile: resume.profile, summary: resume.summary, experience, education, skills: projectText(resume.skills), projects, languages: projectText(resume.languages) }
 }
 
 export function formatResumePeriod(start: string, end: string, current: boolean): string {
@@ -42,4 +43,9 @@ export function toSafeExternalUrl(value: string): string | null {
   } catch {
     return null
   }
+}
+
+export function validateExternalUrl(value: string): string | undefined {
+  if (!value.trim() || toSafeExternalUrl(value)) return undefined
+  return '请输入有效的网址'
 }

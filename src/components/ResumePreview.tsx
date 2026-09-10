@@ -24,11 +24,11 @@ const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(function Re
   const sectionTitle = (section: keyof Resume['layout']['sectionTitles']) => resume.layout.sectionTitles[section] || ({ summary: '个人简介', experience: '工作经历', education: '教育经历', skills: '技能', projects: '项目经历', languages: '语言' }[section])
   const editProfile = (key: keyof Resume['profile'], value: string) => onChange?.({ ...resume, profile: { ...resume.profile, [key]: value } })
   const editExperience = (id: string, key: keyof Resume['experience'][number], value: string) => onChange?.({ ...resume, experience: resume.experience.map((item) => item.id === id ? { ...item, [key]: value } : item) })
-  const editBullet = (id: string, bullet: string, value: string) => onChange?.({ ...resume, experience: resume.experience.map((item) => item.id === id ? { ...item, bullets: item.bullets.map((entry) => entry === bullet ? value : entry) } : item) })
+  const editBullet = (id: string, sourceIndex: number, value: string) => onChange?.({ ...resume, experience: resume.experience.map((item) => item.id === id ? { ...item, bullets: item.bullets.map((entry, entryIndex) => entryIndex === sourceIndex ? value : entry) } : item) })
   const editEducation = (id: string, key: keyof Resume['education'][number], value: string) => onChange?.({ ...resume, education: resume.education.map((item) => item.id === id ? { ...item, [key]: value } : item) })
   const editProject = (id: string, key: keyof Resume['projects'][number], value: string) => onChange?.({ ...resume, projects: resume.projects.map((item) => item.id === id ? { ...item, [key]: value } : item) })
-  const editProjectBullet = (id: string, bullet: string, value: string) => onChange?.({ ...resume, projects: resume.projects.map((item) => item.id === id ? { ...item, bullets: item.bullets.map((entry) => entry === bullet ? value : entry) } : item) })
-  const editList = (key: 'skills' | 'languages', index: number, value: string) => onChange?.({ ...resume, [key]: resume[key].map((entry, entryIndex) => entryIndex === index ? value : entry) })
+  const editProjectBullet = (id: string, sourceIndex: number, value: string) => onChange?.({ ...resume, projects: resume.projects.map((item) => item.id === id ? { ...item, bullets: item.bullets.map((entry, entryIndex) => entryIndex === sourceIndex ? value : entry) } : item) })
+  const editList = (key: 'skills' | 'languages', sourceIndex: number, value: string) => onChange?.({ ...resume, [key]: resume[key].map((entry, entryIndex) => entryIndex === sourceIndex ? value : entry) })
 
   return <div ref={forwardedRef} className={`resume-paper resume-${resume.templateId} resume-custom-order resume-density-${resume.layout.density} resume-align-${resume.layout.alignment}`} data-resume-preview style={accentStyle}>
     <div className="resume-main">
