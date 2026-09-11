@@ -25,6 +25,7 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draftTitle, setDraftTitle] = useState('')
   const [menuId, setMenuId] = useState<string | null>(null)
+  const [menuPlacement, setMenuPlacement] = useState<'down' | 'up'>('down')
   const [batchDeletePending, setBatchDeletePending] = useState(false)
   const [templatePreviewId, setTemplatePreviewId] = useState<TemplateId | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -356,6 +357,17 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
     window.requestAnimationFrame(() => document.getElementById(`manager-${nextPane}-tab`)?.focus())
   }
   const commitRename = () => { const session = renameSessionRef.current; if (!session || session.cancelled || session.committed) return; session.committed = true; onRename(session.id, draftTitle); setEditingId(null) }
+  const toggleResumeMenu = (id: string) => {
+    if (menuId === id) {
+      setMenuId(null)
+      return
+    }
+    const trigger = menuTriggerRefs.current[id]
+    const list = trigger?.closest<HTMLElement>('.resume-list')
+    const shouldOpenUp = isMobileViewport && trigger && list && trigger.getBoundingClientRect().bottom + 132 > list.getBoundingClientRect().bottom - 8
+    setMenuPlacement(shouldOpenUp ? 'up' : 'down')
+    setMenuId(id)
+  }
   const closeAfter = (action: () => void) => { action(); onCloseMobile() }
   const closeDialog = () => { const trigger = deleteTriggerRefs.current[confirmId ?? '']; setConfirmId(null); setBatchDeletePending(false); setSelectedIds([]); window.setTimeout(() => trigger?.focus(), 0) }
   const openTemplatePreview = (nextTemplateId: TemplateId) => { if (!isMobileViewport) { onTemplateChange(nextTemplateId); return } setTemplatePreviewId(nextTemplateId) }
@@ -380,15 +392,15 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
         const cardStyle = isDragging ? { transform: `translate3d(0, ${dragOffset}px, 0)` } : revealOffset ? { width: `calc(100% - ${revealOffset}px)` } : undefined
         const deleteStyle = isSwiping ? { opacity: revealOffset / SWIPE_DELETE_OFFSET, transform: `translate3d(${12 - revealOffset / SWIPE_DELETE_OFFSET * 12}px, 0, 0) scale(${.9 + revealOffset / SWIPE_DELETE_OFFSET * .1})` } : undefined
         const shellStyle = dragShift ? { transform: `translate3d(0, ${dragShift}px, 0)` } : undefined
-        return <div className={`resume-list-item-shell${swipedId === resume.id ? ' is-swiped' : ''}${isSwiping ? ' is-swiping' : ''}${isSelected ? ' is-selected' : ''}${hiddenGroupMember ? ' is-group-member-hidden' : ''}${dragOverId === resume.id ? ' is-drag-over' : ''}`} key={resume.id} ref={(element) => { resumeItemRefs.current[resume.id] = element }} style={shellStyle}>
+        return <div className={`resume-list-item-shell${swipedId === resume.id ? ' is-swiped' : ''}${isSwiping ? ' is-swiping' : ''}${isSelected ? ' is-selected' : ''}${hiddenGroupMember ? ' is-group-member-hidden' : ''}${dragOverId === resume.id ? ' is-drag-over' : ''}${menuId === resume.id ? ' is-menu-open' : ''}`} key={resume.id} ref={(element) => { resumeItemRefs.current[resume.id] = element }} style={shellStyle}>
           <button className="resume-swipe-delete" style={deleteStyle} type="button" onClick={() => openSingleDelete(resume.id)} disabled={swipedId !== resume.id} tabIndex={swipedId === resume.id ? 0 : -1} aria-hidden={swipedId !== resume.id} aria-label={`删除${displayTitle}`}><Trash2 size={16} aria-hidden="true" /><span>删除</span></button>
           <div className={`resume-list-item ${resume.id === selectedId ? 'is-active' : ''}${isDragging ? ' is-dragging' : ''}${groupDragging && isDragging ? ' is-dragging-group' : ''}${longPressArmedId === resume.id ? ' is-long-press-armed' : ''}${revealOffset || isDragging ? ' is-gesture-moving' : ''}`} data-resume-menu={menuId === resume.id ? resume.id : undefined} onPointerDown={(event) => handleResumePointerDown(event, resume.id)} onPointerMove={handleResumePointerMove} onPointerUp={finishResumeGesture} onPointerCancel={(event) => finishResumeGesture(event, true)} style={cardStyle}>
             {groupDragging && isDragging && <span className="resume-drag-stack" aria-hidden="true"><i /><i /><b>{selectedIds.length} 份</b></span>}
             {selectedIds.length > 0 && <span className="resume-selection-indicator" aria-hidden="true">{isSelected ? <Check size={13} strokeWidth={2.7} /> : null}</span>}
             <span className="resume-list-marker" aria-hidden="true"><FileText size={16} strokeWidth={1.8} /></span>
             {editingId === resume.id ? <input className="rename-input" value={draftTitle} autoFocus onChange={(event) => setDraftTitle(event.target.value)} onBlur={commitRename} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); commitRename() } if (event.key === 'Escape') { if (renameSessionRef.current) renameSessionRef.current.cancelled = true; setEditingId(null) } }} aria-label={`重命名 ${displayTitle}`} /> : <button className="resume-list-main" type="button" onClick={() => handleResumeClick(resume.id)} aria-pressed={selectedIds.length > 0 ? isSelected : undefined}><span className="resume-list-copy"><span className="resume-list-title">{displayTitle}</span><span className="resume-list-meta">{templateById(resume.templateId).name} · {formatUpdatedAt(resume.updatedAt)}</span></span>{resume.id === selectedId && <span className="resume-list-current">当前</span>}</button>}
-            <button className="icon-button list-menu-button" type="button" ref={(element) => { menuTriggerRefs.current[resume.id] = element }} onClick={() => setMenuId(menuId === resume.id ? null : resume.id)} aria-label={`打开${displayTitle}操作菜单`} aria-haspopup="menu" aria-expanded={menuId === resume.id} aria-controls={`resume-menu-${resume.id}`}><MoreHorizontal size={17} aria-hidden="true" /></button>
-            {menuId === resume.id && <div className="resume-item-menu" id={`resume-menu-${resume.id}`} role="menu" aria-label={`${displayTitle}操作`} data-resume-menu={resume.id}><button type="button" role="menuitem" onClick={() => beginRename(resume)}><Pencil size={14} aria-hidden="true" />重命名</button><button type="button" role="menuitem" onClick={() => closeAfter(() => { onDuplicate(resume.id); setMenuId(null) })}><Copy size={14} aria-hidden="true" />复制</button><button type="button" role="menuitem" className="danger-text" ref={(element) => { deleteTriggerRefs.current[resume.id] = element }} onClick={() => { setConfirmId(resume.id); setMenuId(null) }}><Trash2 size={14} aria-hidden="true" />删除</button></div>}
+            <button className="icon-button list-menu-button" type="button" ref={(element) => { menuTriggerRefs.current[resume.id] = element }} onClick={() => toggleResumeMenu(resume.id)} aria-label={`打开${displayTitle}操作菜单`} aria-haspopup="menu" aria-expanded={menuId === resume.id} aria-controls={`resume-menu-${resume.id}`}><MoreHorizontal size={17} aria-hidden="true" /></button>
+            {menuId === resume.id && <div className={`resume-item-menu${menuPlacement === 'up' ? ' is-upward' : ''}`} id={`resume-menu-${resume.id}`} role="menu" aria-label={`${displayTitle}操作`} data-resume-menu={resume.id}><button type="button" role="menuitem" onClick={() => beginRename(resume)}><Pencil size={14} aria-hidden="true" />重命名</button><button type="button" role="menuitem" onClick={() => closeAfter(() => { onDuplicate(resume.id); setMenuId(null) })}><Copy size={14} aria-hidden="true" />复制</button><button type="button" role="menuitem" className="danger-text" ref={(element) => { deleteTriggerRefs.current[resume.id] = element }} onClick={() => { setConfirmId(resume.id); setMenuId(null) }}><Trash2 size={14} aria-hidden="true" />删除</button></div>}
           </div>
         </div>
       })}</div>

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type DragEvent, type KeyboardEvent, type Ref } from 'react'
-import { Eye, FileText, GripVertical, PencilLine } from 'lucide-react'
+import { Eye, FileText, GripVertical, PencilLine, Pin } from 'lucide-react'
 import type { Resume } from '../types/resume'
 import ResumeEditor from './ResumeEditor'
 import TemplatePicker from './TemplatePicker'
@@ -68,6 +68,7 @@ const snapToNearestEdge = (position: DragPosition, element: HTMLElement): DragPo
 export default function ResumeWorkspace({ resume, onChange, previewRef }: ResumeWorkspaceProps) {
   const [mobilePane, setMobilePane] = useState<MobilePane>('editor')
   const [paneOrder, setPaneOrder] = useState<DesktopPane[]>(['editor', 'preview'])
+  const [previewFrozen, setPreviewFrozen] = useState(true)
   const [draggedPane, setDraggedPane] = useState<DesktopPane | null>(null)
   const [dragOverPane, setDragOverPane] = useState<DesktopPane | null>(null)
   const [paneSwapPulse, setPaneSwapPulse] = useState(false)
@@ -297,13 +298,16 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
   }
   const paneHeading = (pane: DesktopPane) => <div className="column-heading">
     <div><p className="eyebrow">{pane === 'editor' ? '内容工作区' : '视觉工作区'}</p><h2>{pane === 'editor' ? '编辑内容' : '实时预览'}</h2></div>
-    <button className="pane-drag-handle" type="button" draggable="true" onDragStart={(event) => startPaneDrag(pane, event)} onDragEnd={finishPaneDrag} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); swapPanes(pane) } }} aria-label={`拖动${pane === 'editor' ? '编辑内容' : '实时预览'}调整位置`} title="拖动调整位置"><GripVertical size={17} aria-hidden="true" /><span>拖动</span></button>
+    <div className="column-heading-actions">
+      {pane === 'preview' && <button className={`pane-freeze-toggle${previewFrozen ? ' is-active' : ''}`} type="button" aria-pressed={previewFrozen} aria-label={previewFrozen ? '取消冻结预览' : '冻结预览'} title={previewFrozen ? '取消冻结预览' : '冻结预览'} onClick={() => setPreviewFrozen((current) => !current)}><Pin size={15} aria-hidden="true" /><span>{previewFrozen ? '已冻结' : '冻结'}</span></button>}
+      <button className="pane-drag-handle" type="button" draggable="true" onDragStart={(event) => startPaneDrag(pane, event)} onDragEnd={finishPaneDrag} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); swapPanes(pane) } }} aria-label={`拖动${pane === 'editor' ? '编辑内容' : '实时预览'}调整位置`} title="拖动调整位置"><GripVertical size={17} aria-hidden="true" /><span>拖动</span></button>
+    </div>
   </div>
   const editorPane = <section id="resume-editor-panel" className={`editor-column ${mobilePane === 'editor' ? 'mobile-visible' : 'mobile-hidden'}${draggedPane === 'editor' ? ' is-dragging-pane' : ''}${dragOverPane === 'editor' ? ' is-drag-over' : ''}`} style={{ order: paneOrder.indexOf('editor') }} role="tabpanel" aria-labelledby="resume-editor-tab" onDragOver={(event) => { if (draggedPane && draggedPane !== 'editor') { event.preventDefault(); setDragOverPane('editor') } }} onDragLeave={clearPaneDropTarget} onDrop={(event) => dropPane('editor', event)}>
     {paneHeading('editor')}
     <ResumeEditor resume={resume} onChange={onChange} />
   </section>
-  const previewPane = <section id="resume-preview-panel" className={`preview-column ${mobilePane === 'preview' ? 'mobile-visible' : 'mobile-hidden'}${draggedPane === 'preview' ? ' is-dragging-pane' : ''}${dragOverPane === 'preview' ? ' is-drag-over' : ''}`} style={{ order: paneOrder.indexOf('preview') }} role="tabpanel" aria-labelledby="resume-preview-tab" onDragOver={(event) => { if (draggedPane && draggedPane !== 'preview') { event.preventDefault(); setDragOverPane('preview') } }} onDragLeave={clearPaneDropTarget} onDrop={(event) => dropPane('preview', event)}>
+  const previewPane = <section id="resume-preview-panel" className={`preview-column ${mobilePane === 'preview' ? 'mobile-visible' : 'mobile-hidden'}${previewFrozen ? ' is-preview-frozen' : ''}${draggedPane === 'preview' ? ' is-dragging-pane' : ''}${dragOverPane === 'preview' ? ' is-drag-over' : ''}`} style={{ order: paneOrder.indexOf('preview') }} role="tabpanel" aria-labelledby="resume-preview-tab" onDragOver={(event) => { if (draggedPane && draggedPane !== 'preview') { event.preventDefault(); setDragOverPane('preview') } }} onDragLeave={clearPaneDropTarget} onDrop={(event) => dropPane('preview', event)}>
     {paneHeading('preview')}
     <div className="preview-stage"><ResumePreview resume={resume} onChange={onChange} ref={previewRef} /></div>
   </section>
