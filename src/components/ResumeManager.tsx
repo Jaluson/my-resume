@@ -389,7 +389,7 @@ export default function ResumeManager({ resumes, selectedId, templateId, onSelec
         const isSwiping = gestureRef.current?.id === resume.id && gestureRef.current?.axis === 'horizontal'
         const revealOffset = swipedId === resume.id ? SWIPE_DELETE_OFFSET : isSwiping ? Math.max(0, -swipeOffset) : 0
         const dragShift = getDragShift(resume.id)
-        const cardStyle = isDragging ? { transform: `translate3d(0, ${dragOffset}px, 0)` } : revealOffset ? { width: `calc(100% - ${revealOffset}px)` } : undefined
+        const cardStyle = isDragging ? { transform: `translate3d(0, ${dragOffset}px, 0)` } : revealOffset ? { transform: `translate3d(-${revealOffset}px, 0, 0)` } : undefined
         const deleteStyle = isSwiping ? { opacity: revealOffset / SWIPE_DELETE_OFFSET, transform: `translate3d(${12 - revealOffset / SWIPE_DELETE_OFFSET * 12}px, 0, 0) scale(${.9 + revealOffset / SWIPE_DELETE_OFFSET * .1})` } : undefined
         const shellStyle = dragShift ? { transform: `translate3d(0, ${dragShift}px, 0)` } : undefined
         return <div className={`resume-list-item-shell${swipedId === resume.id ? ' is-swiped' : ''}${isSwiping ? ' is-swiping' : ''}${isSelected ? ' is-selected' : ''}${hiddenGroupMember ? ' is-group-member-hidden' : ''}${dragOverId === resume.id ? ' is-drag-over' : ''}${menuId === resume.id ? ' is-menu-open' : ''}`} key={resume.id} ref={(element) => { resumeItemRefs.current[resume.id] = element }} style={shellStyle}>

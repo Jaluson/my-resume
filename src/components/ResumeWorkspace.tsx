@@ -299,7 +299,7 @@ export default function ResumeWorkspace({ resume, onChange, previewRef }: Resume
   const paneHeading = (pane: DesktopPane) => <div className="column-heading">
     <div><p className="eyebrow">{pane === 'editor' ? '内容工作区' : '视觉工作区'}</p><h2>{pane === 'editor' ? '编辑内容' : '实时预览'}</h2></div>
     <div className="column-heading-actions">
-      {pane === 'preview' && <button className={`pane-freeze-toggle${previewFrozen ? ' is-active' : ''}`} type="button" aria-pressed={previewFrozen} aria-label={previewFrozen ? '取消冻结预览' : '冻结预览'} title={previewFrozen ? '取消冻结预览' : '冻结预览'} onClick={() => setPreviewFrozen((current) => !current)}><Pin size={15} aria-hidden="true" /><span>{previewFrozen ? '已冻结' : '冻结'}</span></button>}
+      {pane === 'preview' && <button className={`pane-freeze-toggle${previewFrozen ? ' is-active' : ''}`} type="button" aria-pressed={previewFrozen} aria-label={previewFrozen ? '取消固定预览' : '固定预览'} title={previewFrozen ? '取消固定预览' : '固定预览'} onClick={() => setPreviewFrozen((current) => !current)}><Pin size={15} aria-hidden="true" /><span>{previewFrozen ? '已固定' : '固定'}</span></button>}
       <button className="pane-drag-handle" type="button" draggable="true" onDragStart={(event) => startPaneDrag(pane, event)} onDragEnd={finishPaneDrag} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); swapPanes(pane) } }} aria-label={`拖动${pane === 'editor' ? '编辑内容' : '实时预览'}调整位置`} title="拖动调整位置"><GripVertical size={17} aria-hidden="true" /><span>拖动</span></button>
     </div>
   </div>

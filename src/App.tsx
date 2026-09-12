@@ -17,14 +17,14 @@ function BrandMark() {
     <svg className="brand-mark-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id="brand-mark-gradient" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#2f6ff5" />
-          <stop offset="1" stopColor="#1746b8" />
+          <stop stopColor="#797DFF" />
+          <stop offset="1" stopColor="#5158D6" />
         </linearGradient>
       </defs>
       <rect width="32" height="32" rx="9" fill="url(#brand-mark-gradient)" />
       <path d="M9.25 6.75h9.1l4.4 4.4v13.1H9.25z" fill="none" stroke="#fff" strokeWidth="1.55" strokeLinejoin="round" />
-      <path d="M18.35 6.75v4.4h4.4" fill="none" stroke="#bfdbfe" strokeWidth="1.55" strokeLinejoin="round" />
-      <path d="M12.3 15h6.2M12.3 18.35h4.35" fill="none" stroke="#dbeafe" strokeWidth="1.45" strokeLinecap="round" />
+      <path d="M18.35 6.75v4.4h4.4" fill="none" stroke="#B8F4FF" strokeWidth="1.55" strokeLinejoin="round" />
+      <path d="M12.3 15h6.2M12.3 18.35h4.35" fill="none" stroke="#E9F3FF" strokeWidth="1.45" strokeLinecap="round" />
       <path d="m12.1 23.55 1.05-3.2 7.85-7.85 2.55 2.55-7.85 7.85z" fill="#fff" stroke="#fff" strokeWidth=".7" strokeLinejoin="round" />
       <path d="m19.55 13.75 2.55 2.55" fill="none" stroke="#78a9ff" strokeWidth="1.15" strokeLinecap="round" />
     </svg>
